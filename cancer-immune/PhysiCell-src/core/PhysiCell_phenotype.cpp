@@ -1,71 +1,75 @@
 /*
-#############################################################################
-# If you use PhysiCell in your project, please cite PhysiCell and the ver-  #
-# sion number, such as below:                                               #
-#                                                                           #
-# We implemented and solved the model using PhysiCell (Version 1.2.1) [1].  #
-#                                                                           #
-# [1] A Ghaffarizadeh, SH Friedman, SM Mumenthaler, and P Macklin,          #
-#     PhysiCell: an Open Source Physics-Based Cell Simulator for            #
-#     Multicellular Systems, PLoS Comput. Biol. 2017 (in revision).         #
-#     preprint DOI: 10.1101/088773                                          #
-#                                                                           #
-# Because PhysiCell extensively uses BioFVM, we suggest you also cite       #
-#     BioFVM as below:                                                      #
-#                                                                           #
-# We implemented and solved the model using PhysiCell (Version 1.2.1) [1],  #
-# with BioFVM [2] to solve the transport equations.                         #
-#                                                                           #
-# [1] A Ghaffarizadeh, SH Friedman, SM Mumenthaler, and P Macklin,          #
-#     PhysiCell: an Open Source Physics-Based Cell Simulator for            #
-#     Multicellular Systems, PLoS Comput. Biol. 2017 (in revision).         #
-#     preprint DOI: 10.1101/088773                                          #
-#                                                                           #
-# [2] A Ghaffarizadeh, SH Friedman, and P Macklin, BioFVM: an efficient     #
-#    parallelized diffusive transport solver for 3-D biological simulations,#
-#    Bioinformatics 32(8): 1256-8, 2016. DOI: 10.1093/bioinformatics/btv730 #
-#                                                                           #
-#############################################################################
-#                                                                           #
-# BSD 3-Clause License (see https://opensource.org/licenses/BSD-3-Clause)   #
-#                                                                           #
-# Copyright (c) 2015-2017, Paul Macklin and the PhysiCell Project           #
-# All rights reserved.                                                      #
-#                                                                           #
-# Redistribution and use in source and binary forms, with or without        #
-# modification, are permitted provided that the following conditions are    #
-# met:                                                                      #
-#                                                                           #
-# 1. Redistributions of source code must retain the above copyright notice, #
-# this list of conditions and the following disclaimer.                     #
-#                                                                           #
-# 2. Redistributions in binary form must reproduce the above copyright      #
-# notice, this list of conditions and the following disclaimer in the       #
-# documentation and/or other materials provided with the distribution.      #
-#                                                                           #
-# 3. Neither the name of the copyright holder nor the names of its          #
-# contributors may be used to endorse or promote products derived from this #
-# software without specific prior written permission.                       #
-#                                                                           #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS       #
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED #
-# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A           #
-# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER #
-# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,  #
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       #
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        #
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    #
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      #
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        #
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              #
-#                                                                           #
-#############################################################################
+###############################################################################
+# If you use PhysiCell in your project, please cite PhysiCell and the version #
+# number, such as below:                                                      #
+#                                                                             #
+# We implemented and solved the model using PhysiCell (Version x.y.z) [1].    #
+#                                                                             #
+# [1] A Ghaffarizadeh, R Heiland, SH Friedman, SM Mumenthaler, and P Macklin, #
+#     PhysiCell: an Open Source Physics-Based Cell Simulator for Multicellu-  #
+#     lar Systems, PLoS Comput. Biol. 14(2): e1005991, 2018                   #
+#     DOI: 10.1371/journal.pcbi.1005991                                       #
+#                                                                             #
+# See VERSION.txt or call get_PhysiCell_version() to get the current version  #
+#     x.y.z. Call display_citations() to get detailed information on all cite-#
+#     able software used in your PhysiCell application.                       #
+#                                                                             #
+# Because PhysiCell extensively uses BioFVM, we suggest you also cite BioFVM  #
+#     as below:                                                               #
+#                                                                             #
+# We implemented and solved the model using PhysiCell (Version x.y.z) [1],    #
+# with BioFVM [2] to solve the transport equations.                           #
+#                                                                             #
+# [1] A Ghaffarizadeh, R Heiland, SH Friedman, SM Mumenthaler, and P Macklin, #
+#     PhysiCell: an Open Source Physics-Based Cell Simulator for Multicellu-  #
+#     lar Systems, PLoS Comput. Biol. 14(2): e1005991, 2018                   #
+#     DOI: 10.1371/journal.pcbi.1005991                                       #
+#                                                                             #
+# [2] A Ghaffarizadeh, SH Friedman, and P Macklin, BioFVM: an efficient para- #
+#     llelized diffusive transport solver for 3-D biological simulations,     #
+#     Bioinformatics 32(8): 1256-8, 2016. DOI: 10.1093/bioinformatics/btv730  #
+#                                                                             #
+###############################################################################
+#                                                                             #
+# BSD 3-Clause License (see https://opensource.org/licenses/BSD-3-Clause)     #
+#                                                                             #
+# Copyright (c) 2015-2018, Paul Macklin and the PhysiCell Project             #
+# All rights reserved.                                                        #
+#                                                                             #
+# Redistribution and use in source and binary forms, with or without          #
+# modification, are permitted provided that the following conditions are met: #
+#                                                                             #
+# 1. Redistributions of source code must retain the above copyright notice,   #
+# this list of conditions and the following disclaimer.                       #
+#                                                                             #
+# 2. Redistributions in binary form must reproduce the above copyright        #
+# notice, this list of conditions and the following disclaimer in the         #
+# documentation and/or other materials provided with the distribution.        #
+#                                                                             #
+# 3. Neither the name of the copyright holder nor the names of its            #
+# contributors may be used to endorse or promote products derived from this   #
+# software without specific prior written permission.                         #
+#                                                                             #
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" #
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE   #
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE  #
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE   #
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR         #
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF        #
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS    #
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN     #
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)     #
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE  #
+# POSSIBILITY OF SUCH DAMAGE.                                                 #
+#                                                                             #
+###############################################################################
 */
 
 #include "./PhysiCell_phenotype.h"
 
 #include "../BioFVM/BioFVM.h"
 #include "./PhysiCell_constants.h"
+#include "./PhysiCell_utilities.h"
 
 using namespace BioFVM; 
 
@@ -306,7 +310,7 @@ void Cycle_Model::advance_model( Cell* pCell, Phenotype& phenotype, double dt )
 			else
 			{
 				double prob = phenotype.cycle.data.transition_rates[i][k]*dt; 
-				if( uniform_random() <= prob )
+				if( UniformRandom() <= prob )
 				{
 					continue_transition = true; 
 				}
@@ -441,7 +445,7 @@ bool Death::check_for_death( double dt )
 	int i = 0; 
 	while( !dead && i < rates.size() )
 	{
-		if( uniform_random() < rates[i]*dt )
+		if( UniformRandom() < rates[i]*dt )
 		{
 			// update the Death data structure 
 			dead = true; 
@@ -641,10 +645,110 @@ Mechanics::Mechanics()
 	
 	// this is a multiple of the cell (equivalent) radius
 	relative_maximum_adhesion_distance = 1.25; 
-	maximum_adhesion_distance = 0.0; 
+	// maximum_adhesion_distance = 0.0; 
 	
 	return; 
 }
+
+
+// new on July 29, 2018
+// change the ratio without changing the repulsion strength or equilibrium spacing 
+void Mechanics::set_relative_maximum_adhesion_distance( double new_value )
+{
+	// get old equilibrium spacing, based on equilibriation of pairwise adhesive/repulsive forces at that distance. 
+	
+		// relative equilibrium spacing (relative to mean cell radius)
+	double s_relative = 2.0; 
+//	std::cout << "----------------" << std::endl; 
+//	std::cout << __FILE__ << " : " << __FUNCTION__ << " : " << __LINE__ << ": " << s_relative << std::endl; 
+	
+	double temp1 = cell_cell_adhesion_strength; 
+	temp1 /= cell_cell_repulsion_strength;
+	temp1 = sqrt( temp1 ); 
+	
+	double temp2 = 1.0; 
+	temp2 -= temp1; //  1 - sqrt( alpha_CCA / alpha_CCR );
+	
+	
+	s_relative *= temp2; // 2*( 1 - sqrt( alpha_CCA / alpha_CCR ) ); 
+	
+	temp1 /= relative_maximum_adhesion_distance; // sqrt( alpha_CCA / alpha_CCR)/f;
+	temp2 = 1.0; 
+	temp2 -= temp1; // 1 - sqrt( alpha_CCA / alpha_CCR )/f;
+
+	s_relative /= temp2; // 2*( 1 - sqrt( alpha_CCA / alpha_CCR ) ) / ( 1-1/f) ; 
+	
+	std::cout << "\t\t\t" << s_relative << std::endl; 
+	
+	// now, adjust the relative max adhesion distance 
+	
+	relative_maximum_adhesion_distance = new_value; 
+	
+	// adjust the adhesive coefficient to preserve the old equilibrium distance
+
+	temp1 = s_relative; 
+	temp1 /= 2.0; 
+	
+	temp2 = 1.0;
+	temp2 -= temp1; // 1 - s_relative/2.0 
+	
+	temp1 /= relative_maximum_adhesion_distance; // s_relative/(2*relative_maximum_adhesion_distance); 
+	temp1 *= -1.0; // -s_relative/(2*relative_maximum_adhesion_distance); 
+	temp1 += 1.0; // 1.0 -s_relative/(2*relative_maximum_adhesion_distance); 
+	
+	temp2 /= temp1; 
+	temp2 *= temp2; 
+	
+	cell_cell_adhesion_strength = cell_cell_repulsion_strength;
+	cell_cell_adhesion_strength *= temp2; 
+
+	return; 
+}		
+		
+// new on July 29, 2018
+// set the cell-cell equilibrium spacing, accomplished by changing the 
+// cell-cell adhesion strength, while leaving the cell-cell repulsion 
+// strength and the maximum adhesion distance unchanged 
+void Mechanics::set_relative_equilibrium_distance( double new_value )
+{
+	if( new_value > 2.0 )
+	{
+		std::cout << "**** Warning in function " << __FUNCTION__ << " in " << __FILE__ << " : " << std::endl 
+			<< "\tAttempted to set equilibrium distance exceeding two cell radii." << std::endl
+			<< "\tWe will cap the equilibrium distance at 2.0 cell radii." << std::endl 
+			<< "****" << std::endl << std::endl; 
+			
+			new_value = 2.0; 
+	}
+ 
+	// adjust the adhesive coefficient to achieve the new (relative) equilibrium distance
+
+	double temp1 = new_value; 
+	temp1 /= 2.0; 
+	
+	double temp2 = 1.0;
+	temp2 -= temp1; // 1 - s_relative/2.0 
+	
+	temp1 /= relative_maximum_adhesion_distance; // s_relative/(2*relative_maximum_adhesion_distance); 
+	temp1 *= -1.0; // -s_relative/(2*relative_maximum_adhesion_distance); 
+	temp1 += 1.0; // 1.0 -s_relative/(2*relative_maximum_adhesion_distance); 
+	
+	temp2 /= temp1; 
+	temp2 *= temp2; 
+	
+	cell_cell_adhesion_strength = cell_cell_repulsion_strength;
+	cell_cell_adhesion_strength *= temp2; 
+
+	return; 
+}
+
+void Mechanics::set_absolute_equilibrium_distance( Phenotype& phenotype, double new_value )
+{
+	return set_relative_equilibrium_distance( new_value / phenotype.geometry.radius ); 
+}
+
+// void Mechanics::set_absolute_maximum_adhesion_distance( double new_value );
+// void 
 	
 	
 Motility::Motility()
@@ -790,6 +894,8 @@ Cell_Functions::Cell_Functions()
 	calculate_distance_to_membrane = NULL; 
 	
 	set_orientation = NULL; 
+	
+	contact_function = NULL; 
 
 	return; 
 }
