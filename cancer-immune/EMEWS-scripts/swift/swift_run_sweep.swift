@@ -1,13 +1,28 @@
 import io;
 import sys;
 import files;
+import python;
 
 string emews_root = getenv("EMEWS_PROJECT_ROOT");
 string turbine_output = getenv("TURBINE_OUTPUT");
+string exec = argv("model");
+string default_xml_config = argv("config");
 
-app (file out, file err) run_model (file shfile, string param_line, string instance)
+to_xml_code =
+"""
+import params2xml
+import json
+
+params = json.loads('%s')
+default_config = '%s'
+xml_out = '%s'
+
+params2xml.params_to_xml(params, default_config, xml_out)
+""";
+
+app (file out, file err) run_model (file shfile, string param_file, string instance)
 {
-    "bash" shfile param_line emews_root instance @stdout=out @stderr=err;
+    "bash" shfile exec param_file emews_root instance @stdout=out @stderr=err;
 }
 
 // call this to create any required directories
@@ -15,22 +30,19 @@ app (void o) make_dir(string dirname) {
   "mkdir" "-p" dirname;
 }
 
-// anything that need to be done prior to a model runs
-// (e.g. file creation) can be done here
-//app (void o) run_prerequisites() {
-//
-//}
 
-//run_prerequisites() => {
-  file model_sh = input(emews_root+"/scripts/cancer-emews.sh");
-  file upf = input(argv("f"));
-  string upf_lines[] = file_lines(upf);
-  foreach s,i in upf_lines {
-    string instance = "%s/instance_%i/" % (turbine_output, i+1);
-    make_dir(instance) => {
-      file out <instance+"out.txt">;
-      file err <instance+"err.txt">;
-      (out,err) = run_model(model_sh, s, instance);
-    }
+file model_sh = input(emews_root+"/scripts/cancer-emews.sh");
+file json_input = input(argv("f"));
+string lines[] = file_lines(json_input);
+foreach s,i in lines {
+  string instance = "%s/instance_%i/" % (turbine_output, i+1);
+  make_dir(instance) => {
+    xml_out = instance + "config.xml";
+    code = to_xml_code % (s, default_xml_config, xml_out);
+    file out <instance+"out.txt">;
+    file err <instance+"err.txt">;
+    python_persist(code, "'ignore'") =>
+    (out,err) = run_model(model_sh, xml_out, instance);
   }
-//}
+}
+

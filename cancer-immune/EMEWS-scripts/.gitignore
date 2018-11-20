@@ -1,0 +1,5 @@
+*.tic
+experiments/
+*.pyc
+__pycache__
+nc_notes.txt

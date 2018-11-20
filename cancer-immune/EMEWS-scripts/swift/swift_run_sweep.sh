@@ -21,7 +21,7 @@ export TURBINE_OUTPUT=$EMEWS_PROJECT_ROOT/experiments/$EXPID
 check_directory_exists
 
 # TODO edit the number of processes as required.
-export PROCS=2
+export PROCS=4
 
 # TODO edit QUEUE, WALLTIME, PPN, AND TURNBINE_JOBNAME
 # as required. Note that QUEUE, WALLTIME, PPN, AND TURNBINE_JOBNAME will
@@ -36,7 +36,7 @@ export TURBINE_JOBNAME="${EXPID}_job"
 # export R_HOME=/path/to/R
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$R_HOME/lib
 # if python packages can't be found, then uncommited and set this
-# export PYTHONPATH=/path/to/python/packages
+export PYTHONPATH=$EMEWS_PROJECT_ROOT/python
 
 
 # TODO edit command line arguments as appropriate
@@ -44,6 +44,17 @@ export TURBINE_JOBNAME="${EXPID}_job"
 # command line arguments to the swift script.
 CMD_LINE_ARGS="$*"
 INPUT_FILE=$EMEWS_PROJECT_ROOT/data/$2
+
+mkdir -p $TURBINE_OUTPUT
+
+EXECUTABLE=cancer-immune-EMEWS2
+EP=$EMEWS_PROJECT_ROOT/../PhysiCell-src/$EXECUTABLE
+EXE=$TURBINE_OUTPUT/$EXECUTABLE
+cp  $EP $EXE
+
+DEFAULT_XML=$EMEWS_PROJECT_ROOT/data/PhysiCell_default_settings.xml
+CONFIG=$TURBINE_OUTPUT/default_config.xml
+cp $DEFAULT_XML $CONFIG
 
 # set machine to your schedule type (e.g. pbs, slurm, cobalt etc.),
 # or empty for an immediate non-queued unscheduled run
@@ -64,4 +75,4 @@ log_script
 set -x
 
 swift-t -n $PROCS $MACHINE -p $EMEWS_PROJECT_ROOT/swift/swift_run_sweep.swift \
-  -f="$INPUT_FILE" $CMD_LINE_ARGS
+  -f="$INPUT_FILE" -model="$EXE" -config="$CONFIG" $CMD_LINE_ARGS

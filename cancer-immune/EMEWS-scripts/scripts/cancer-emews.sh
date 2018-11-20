@@ -2,8 +2,6 @@
 
 set -eu
 
-module swap PrgEnv-gnu/5.2.40 PrgEnv-cray/5.2.40
-
 # Check for an optional timeout threshold in seconds. If the duration of the
 # model run as executed below, takes longer that this threshhold
 # then the run will be aborted. Note that the "timeout" command
@@ -16,7 +14,7 @@ module swap PrgEnv-gnu/5.2.40 PrgEnv-cray/5.2.40
 # !!! IF YOU CHANGE THE NUMBER OF ARGUMENTS PASSED TO THIS SCRIPT, YOU MUST
 # CHANGE THE TIMEOUT_ARG_INDEX !!!
 TIMEOUT=""
-TIMEOUT_ARG_INDEX=4
+TIMEOUT_ARG_INDEX=5
 if [[ $# ==  $TIMEOUT_ARG_INDEX ]]
 then
 	TIMEOUT=${!TIMEOUT_ARG_INDEX}
@@ -27,26 +25,31 @@ if [ -n "$TIMEOUT" ]; then
   TIMEOUT_CMD="timeout $TIMEOUT"
 fi
 
+# exec param_file emews_root instance
+exec=$1
+
 # Set param_line from the first argument to this script
 # param_line is the string containing the model parameters for a run.
-param_line=$1
+param_file=$2
 
 # Set emews_root to the root directory of the project (i.e. the directory
 # that contains the scripts, swift, etc. directories and files)
-emews_root=$2
+emews_root=$3
 
 # Each model run, runs in its own "instance" directory
 # Set instance_directory to that and cd into it.
-instance_directory=$3
+instance_directory=$4
 cd $instance_directory
+
+mkdir -p output
 
 # TODO: Define the command to run the model. For example,
 # MODEL_CMD="python"
-MODEL_CMD="$emews_root/model/cancer-immune-EMEWS"
+MODEL_CMD="$exec"
 # TODO: Define the arguments to the MODEL_CMD. Each rguments should be
 # surrounded by quotes and separated by spaces. For example,
 # arg_array=("$emews_root/python/nt3_tc1_runner.py" "$parameter_string")
-arg_array=("$param_line")
+arg_array=("$param_file")
 COMMAND="$MODEL_CMD ${arg_array[@]}"
 
 # Turn bash error checking off. This is
