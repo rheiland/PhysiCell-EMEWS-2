@@ -81,10 +81,13 @@ void create_immune_cell_type( void );
 // set the tumor cell properties, then call the function 
 // to set up the tumor cells 
 void create_cell_types( void );
+void create_cell_types_2D( void ); 
 
 void setup_tissue(); 
+void setup_tissue_2D(); 
 
 void introduce_immune_cells( void ); 
+void introduce_immune_cells_2D( void ); 
 
 // set up the microenvironment to include the immunostimulatory factor 
 void setup_microenvironment( void );   

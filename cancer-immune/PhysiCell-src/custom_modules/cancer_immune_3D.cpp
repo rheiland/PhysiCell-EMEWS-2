@@ -151,8 +151,83 @@ void create_cell_types( void )
 	// Make sure we're ready for 2D
 	
 	cell_defaults.functions.set_orientation = up_orientation; 
-	// cell_defaults.phenotype.geometry.polarity = 1.0; 
+	cell_defaults.phenotype.geometry.polarity = 1.0; 
 	cell_defaults.phenotype.motility.restrict_to_2D = false; // true; 
+	
+	// set to no motility for cancer cells 
+	cell_defaults.phenotype.motility.is_motile = false; 
+	
+	// use default proliferation and death 
+	
+	int cycle_start_index = live.find_phase_index( PhysiCell_constants::live ); 
+	int cycle_end_index = live.find_phase_index( PhysiCell_constants::live ); 
+	
+	int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model ); 
+	
+	cell_defaults.parameters.o2_proliferation_saturation = 38.0;  
+	cell_defaults.parameters.o2_reference = 38.0; 
+	
+	// set default uptake and secretion 
+	// oxygen 
+	cell_defaults.phenotype.secretion.secretion_rates[0] = 0; 
+	cell_defaults.phenotype.secretion.uptake_rates[0] = 10; 
+	cell_defaults.phenotype.secretion.saturation_densities[0] = 38; 
+
+	// immunostimulatory 
+	cell_defaults.phenotype.secretion.saturation_densities[1] = 1; 
+
+	// set the default cell type to o2-based proliferation with the effect of the 
+	// on oncoprotein, and secretion of the immunostimulatory factor 
+	
+	cell_defaults.functions.update_phenotype = tumor_cell_phenotype_with_and_immune_stimulation; 
+	
+	// add the extra bit of "attachment" mechanics 
+	cell_defaults.functions.custom_cell_rule = extra_elastic_attachment_mechanics; 
+	
+	cell_defaults.name = "cancer cell"; 
+	cell_defaults.type = 0; 
+	
+	// add custom data 
+	
+	Parameter<double> paramD;
+	
+	cell_defaults.custom_data.add_variable( "oncoprotein" , "dimensionless", 1.0 ); 
+	paramD = parameters.doubles[ "elastic_coefficient" ]; 
+	cell_defaults.custom_data.add_variable( "elastic coefficient" , paramD.units, paramD.value ); 
+		// "1/min" , 0.01 );  /* param */ 
+	cell_defaults.custom_data.add_variable( "kill rate" , "1/min" , 0 ); // how often it tries to kill
+	cell_defaults.custom_data.add_variable( "attachment lifetime" , "min" , 0 ); // how long it can stay attached 
+	cell_defaults.custom_data.add_variable( "attachment rate" , "1/min" ,0 ); // how long it wants to wander before attaching
+	
+	// create the immune cell type 
+	create_immune_cell_type(); 
+	
+	return; 
+}
+
+void create_cell_types_2D( void )
+{
+	// use the same random seed so that future experiments have the 
+	// same initial histogram of oncoprotein, even if threading means 
+	// that future division and other events are still not identical 
+	// for all runs 
+	SeedRandom( parameters.ints("random_seed") ); 
+	
+	// housekeeping 
+	
+	initialize_default_cell_definition();
+	cell_defaults.phenotype.secretion.sync_to_microenvironment( &microenvironment ); 
+	
+	// turn the default cycle model to live, 
+	// so it's easier to turn off proliferation
+	
+	cell_defaults.phenotype.cycle.sync_to_cycle_model( live ); 
+	
+	// Make sure we're ready for 2D
+	
+	cell_defaults.functions.set_orientation = up_orientation; 
+	cell_defaults.phenotype.geometry.polarity = 1.0; 
+	cell_defaults.phenotype.motility.restrict_to_2D = true; // true; 
 	
 	// set to no motility for cancer cells 
 	cell_defaults.phenotype.motility.is_motile = false; 
@@ -220,11 +295,14 @@ void setup_microenvironment( void )
 	default_microenvironment_options.Z_range = {-750, 750};
 */
 	
+/*	
+	// now, we allow 2D 
 	if( default_microenvironment_options.simulate_2D == true )
 	{
 		std::cout << "Warning: overriding 2D setting to return to 3D" << std::endl; 
 		default_microenvironment_options.simulate_2D = false; 
 	}
+*/	
 	
 	// gradients are needed for this example 
 	
@@ -302,6 +380,54 @@ void introduce_immune_cells( void )
 	return; 
 }
 
+void introduce_immune_cells_2D( void )
+{
+	double tumor_radius = -9e9; // 250.0; 
+	double temp_radius = 0.0; 
+	
+	// for the loop, deal with the (faster) norm squared 
+	for( int i=0; i < (*all_cells).size() ; i++ )
+	{
+		temp_radius = norm_squared( (*all_cells)[i]->position ); 
+		if( temp_radius > tumor_radius )
+		{ tumor_radius = temp_radius; }
+	}
+	// now square root to get to radius 
+	tumor_radius = sqrt( tumor_radius ); 
+	
+	// if this goes wackadoodle, choose 250 
+	if( tumor_radius < 250.0 )
+	{ tumor_radius = 250.0; }
+	
+	std::cout << "current tumor radius: " << tumor_radius << std::endl; 
+	
+	
+	// now seed immune cells 
+	
+	int number_of_immune_cells = 
+		parameters.ints("number_of_immune_cells"); // 7500; // 100; // 40; 
+	double radius_inner = tumor_radius + 
+		parameters.doubles("initial_min_immune_distance_from_tumor"); 30.0; // 75 // 50; 
+	double radius_outer = radius_inner + 
+		parameters.doubles("thickness_of_immune_seeding_region"); // 75.0; // 100; // 1000 - 50.0; 
+	
+	double mean_radius = 0.5*(radius_inner + radius_outer); 
+	double std_radius = 0.33*( radius_outer-radius_inner)/2.0; 
+	
+	for( int i=0 ;i < number_of_immune_cells ; i++ )
+	{
+		double theta = UniformRandom() * 6.283185307179586476925286766559; 
+		
+		double radius = NormalRandom( mean_radius, std_radius ); 
+		
+		Cell* pCell = create_cell( immune_cell ); 
+		// pCell->assign_position( radius*cos(theta)*sin(phi), radius*sin(theta)*sin(phi), radius*cos(phi) ); 
+		pCell->assign_position( radius*cos(theta), radius*sin(theta), 0.0 ); 
+	}
+	
+	return; 
+}
+
 
 std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius)
 {
@@ -334,6 +460,67 @@ std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius
 	
 }
 
+std::vector<std::vector<double>> create_cell_circle_positions(double cell_radius, double tumor_radius)
+{
+	std::vector<std::vector<double>> positions;
+	double cell_spacing = 0.95 * 2.0 * cell_radius; 
+	
+	double x = 0.0; 
+	double x_outer = tumor_radius; 
+	double y = 0.0; 
+	
+	std::vector<double> temp_position = {0.0, 0.0, 0.0 }; 
+	
+	int n = 0; 
+	while( y < tumor_radius )
+	{
+		x = 0.0; 
+		if( n % 2 == 1 )
+		{ x = 0.5*cell_spacing; }
+		x_outer = sqrt( tumor_radius*tumor_radius - y*y ); 
+		
+		while( x < x_outer )
+		{
+			temp_position[0] = x; 
+			temp_position[1] = y; 
+			positions.push_back( temp_position ); 
+			n++; 
+			
+			if( fabs( y ) > 0.01 )
+			{
+				temp_position[0] = x; 
+				temp_position[1] = -y; 
+				positions.push_back( temp_position ); 
+				n++; 
+			}
+			
+			if( fabs( x ) > 0.01 )
+			{ 
+				temp_position[0] = -x; 
+				temp_position[1] = y; 
+				positions.push_back( temp_position ); 
+				n++; 
+				
+				if( fabs( y ) > 0.01 )
+				{
+					temp_position[0] = -x; 
+					temp_position[1] = -y; 
+					positions.push_back( temp_position ); 
+					n++; 
+				}
+			}
+			x += cell_spacing; 
+			
+		}
+		
+		y += cell_spacing * sqrt(3.0)/2.0; 
+		n++; 
+	}
+	
+	return positions; 
+}
+
+
 void setup_tissue( void )
 {
 	// place a cluster of tumor cells at the center 
@@ -345,8 +532,6 @@ void setup_tissue( void )
 		parameters.doubles("tumor_radius"); // 250.0; 
 	
 	Cell* pCell = NULL; 
-	
-	
 	
 	std::vector<std::vector<double>> positions = create_cell_sphere_positions(cell_radius,tumor_radius); 
 	std::cout << "creating " << positions.size() << " closely-packed tumor cells ... " << std::endl; 
@@ -392,6 +577,64 @@ void setup_tissue( void )
 	
 	return; 
 }
+
+void setup_tissue_2D( void )
+{
+	// place a cluster of tumor cells at the center 
+	
+	double cell_radius = cell_defaults.phenotype.geometry.radius; 
+	double cell_spacing = 0.95 * 2.0 * cell_radius; 
+	
+	double tumor_radius = 
+		parameters.doubles("tumor_radius"); // 250.0; 
+	
+	Cell* pCell = NULL; 
+	
+	std::vector<std::vector<double>> positions = create_cell_circle_positions(cell_radius,tumor_radius); 
+	std::cout << "creating " << positions.size() << " closely-packed tumor cells ... " << std::endl; 
+	
+	static double imm_mean = parameters.doubles("tumor_mean_immunogenicity"); 
+	static double imm_sd = parameters.doubles("tumor_immunogenicity_standard_deviation"); 
+		
+	for( int i=0; i < positions.size(); i++ )
+	{
+		pCell = create_cell(); // tumor cell 
+		pCell->assign_position( positions[i] );
+		pCell->custom_data[0] = NormalRandom( imm_mean, imm_sd );
+		if( pCell->custom_data[0] < 0.0 )
+		{ pCell->custom_data[0] = 0.0; } 
+	}
+	
+	double sum = 0.0; 
+	double min = 9e9; 
+	double max = -9e9; 
+	for( int i=0; i < all_cells->size() ; i++ )
+	{
+		double r = (*all_cells)[i]->custom_data[0]; 
+		sum += r;
+		if( r < min )
+		{ min = r; } 
+		if( r > max )
+		{ max = r; }
+	}
+	double mean = sum / ( all_cells->size() + 1e-15 ); 
+	// compute standard deviation 
+	sum = 0.0; 
+	for( int i=0; i < all_cells->size(); i++ )
+	{
+		sum +=  ( (*all_cells)[i]->custom_data[0] - mean )*( (*all_cells)[i]->custom_data[0] - mean ); 
+	}
+	double standard_deviation = sqrt( sum / ( all_cells->size() - 1.0 + 1e-15 ) ); 
+	
+	std::cout << std::endl << "Oncoprotein summary: " << std::endl
+			  << "===================" << std::endl; 
+	std::cout << "mean: " << mean << std::endl; 
+	std::cout << "standard deviation: " << standard_deviation << std::endl; 
+	std::cout << "[min max]: [" << min << " " << max << "]" << std::endl << std::endl; 
+	
+	return; 
+}
+
 
 // custom cell phenotype function to scale immunostimulatory factor with hypoxia 
 void tumor_cell_phenotype_with_and_immune_stimulation( Cell* pCell, Phenotype& phenotype, double dt )

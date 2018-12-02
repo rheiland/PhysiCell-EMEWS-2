@@ -114,8 +114,16 @@ int main( int argc, char* argv[] )
 	double mechanics_voxel_size = 30; 
 	Cell_Container* cell_container = create_cell_container_for_microenvironment( microenvironment, mechanics_voxel_size );
 	
-	create_cell_types();
-	setup_tissue();
+	if( default_microenvironment_options.simulate_2D == false )
+	{
+		create_cell_types();
+		setup_tissue();
+	}
+	else
+	{
+		create_cell_types_2D();
+		setup_tissue_2D();
+	}
 	
 	/* Users typically start modifying here. START USERMODS */ 
 
@@ -185,7 +193,10 @@ int main( int argc, char* argv[] )
 				PhysiCell_globals.next_full_save_time = PhysiCell_globals.current_time; 
 				PhysiCell_globals.next_SVG_save_time = PhysiCell_globals.current_time; 
 				
-				introduce_immune_cells();
+				if( default_microenvironment_options.simulate_2D == false )
+				{ introduce_immune_cells(); }
+				else
+				{ introduce_immune_cells_2D(); }
 			} 
 
 			// save data if it's time. 
