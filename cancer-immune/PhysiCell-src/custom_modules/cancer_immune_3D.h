@@ -120,4 +120,8 @@ void immune_cell_dettach( Cell* pAttacker, Cell* pTarget ); // use dettach_cells
 
 void immune_cell_motility( Cell* pCell, Phenotype& phenotype, double dt ); 
 
+double total_live_cell_count( void ); 
+double mean_live_oncoprotein( void ); 
+double live_protein_entropy( void ); 
+
 

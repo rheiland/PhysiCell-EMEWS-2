@@ -601,6 +601,8 @@ void setup_tissue_2D( void )
 		pCell = create_cell(); // tumor cell 
 		pCell->assign_position( positions[i] );
 		pCell->custom_data[0] = NormalRandom( imm_mean, imm_sd );
+		
+		// pCell->custom_data[0] = 2.0 * UniformRandom(); // only for testing Shannon diversity 
 		if( pCell->custom_data[0] < 0.0 )
 		{ pCell->custom_data[0] = 0.0; } 
 	}
@@ -1024,4 +1026,88 @@ void immune_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 	
 	return; 
 }
+
+double total_live_cell_count( void )
+{
+	double out = 0.0;
+	
+	for( int i=0; i < (*all_cells).size() ; i++ )
+	{
+		if( (*all_cells)[i]->phenotype.death.dead == false && (*all_cells)[i]->type == 0 )
+		{ out += 1.0; } 
+	}
+	
+	return out; 
+}
+
+double mean_live_oncoprotein( void ) 
+{
+	double out = 0.0;
+	static int oncoprotein_i = (*all_cells)[0]->custom_data.find_variable_index( "oncoprotein" ); 
+	
+	Cell* pCell = NULL; 
+	int total_count = 0; 
+	for( int i=0; i < (*all_cells).size() ; i++ )
+	{
+		pCell = (*all_cells)[i]; 
+		if( pCell->phenotype.death.dead == false && pCell->type == 0 )
+		{
+			out += pCell->custom_data[oncoprotein_i]; 
+			total_count++; 
+		}
+	}
+	
+	out /= (double) total_count; 
+	return out; 
+}
+
+
+double live_protein_entropy( void )
+{
+	// 
+	double out = 0.0;
+	
+	static int oncoprotein_i = (*all_cells)[0]->custom_data.find_variable_index( "oncoprotein" ); 
+	
+	// 0 to 5, dp = 0.1; 
+	static double pmax = 2; 
+	static double dp = 0.1; 
+	static int bins = (int) ceil( pmax / dp ); 
+		
+	static std::vector<int> counts( bins , 0 ); 
+	static std::vector<double> ratios( bins , 0.0 ); 
+	static int total_count = 0; 
+	
+	
+	total_count = 0;
+	counts.assign( bins , 0 ); 
+	ratios.assign( bins , 0.0 ); 
+	
+	Cell* pCell = NULL; 
+	for( int i=0; i < (*all_cells).size() ; i++ )
+	{
+		pCell = (*all_cells)[i]; 
+		if( pCell->phenotype.death.dead == false && pCell->type == 0 )
+		{
+			double value = pCell->custom_data[oncoprotein_i]; 
+			int n = (int) floor( value / dp ); 
+			if( n > bins-1 )
+			{ n = bins-1; } 
+			counts[n]++; 
+			total_count++; 
+		}
+	}
+	
+	for( int i=0; i < counts.size() ; i++ )
+	{
+		ratios[i] = counts[i];
+		ratios[i] /= (double) total_count; 
+		out -= ( ratios[i] * log( ratios[i] + 1e-16 ) ); 
+		// out += ratios[i]; 
+	}
+	out = exp( out ); 
+	
+	return out; 
+}
+
 

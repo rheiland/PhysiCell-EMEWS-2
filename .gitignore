@@ -32,3 +32,15 @@
 *.app
 *.svg
 *.png
+cancer-immune/PhysiCell-src/output/ani.gif
+cancer-immune/PhysiCell-src/output/gif/final.gif
+cancer-immune/PhysiCell-src/output2/empty.txt
+cancer-immune/PhysiCell-src/output2/initial.xml
+cancer-immune/PhysiCell-src/output2/initial_cells.mat
+cancer-immune/PhysiCell-src/output/gif/png
+cancer-immune/PhysiCell-src/output/gif/out.gif
+cancer-immune/PhysiCell-src/output/gif/initial.gif
+cancer-immune/PhysiCell-src/output2/initial_cells_physicell.mat
+cancer-immune/PhysiCell-src/output2/initial_mesh0.mat
+cancer-immune/PhysiCell-src/output2/initial_microenvironment0.mat
+cancer-immune/PhysiCell-src/output2/metrics.txt

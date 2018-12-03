@@ -97,7 +97,7 @@
 	</parallel> 
 	
 	<save>
-		<folder>output</folder> <!-- use . for root --> 
+		<folder>output2</folder> <!-- use . for root --> 
 
 		<full_data>
 			<interval units="min">60</interval>
@@ -134,7 +134,7 @@
 		
 		<!-- some extra immune parameters --> 
 		<immune_kill_rate type="double" units="1/min">0.06667</immune_kill_rate> <!-- 15 min--> 
-		<immune_attachment_lifetime type="double" units="min">60.0</immune_attachment_lifetime> 
+		<immune_attachment_lifetime type="double" units="min">60.0</immune_attachment_lifetime> <!-- 60.0 -->
 		<immune_attachment_rate type="double" units="1/min">0.2</immune_attachment_rate> <!-- 5 min--> 
 
 		<elastic_coefficient type="double" units="1/min">0.01</elastic_coefficient>		
@@ -154,14 +154,13 @@
 		<!-- some attachment parameters --> 
 		<oncoprotein_saturation type="double" units="dimensionless">2.0</oncoprotein_saturation>
 			<!-- above this value, more oncoprotein doesn't make cells any further immunogenic -->
-		<oncoprotein_threshold type="double" units="dimensionless">0.5</oncoprotein_threshold>
+		<oncoprotein_threshold type="double" units="dimensionless">0.5</oncoprotein_threshold> <!-- 0.5 --> 
 			<!-- below this vlaue, cells are not immunogenic --> 
 		<max_attachment_distance type="double" units="micron">18.0</max_attachment_distance>
 			<!-- cells do not remain attached beyond this distance --> 
 		<min_attachment_distance type="double" units="micron">14.0</min_attachment_distance>
 			<!-- analogous ot resting spring length --> 
 
-		
 	</user_parameters>
 	
 </PhysiCell_settings>
