@@ -7,6 +7,7 @@ string emews_root = getenv("EMEWS_PROJECT_ROOT");
 string turbine_output = getenv("TURBINE_OUTPUT");
 string exec = argv("model");
 string default_xml_config = argv("config");
+string num_threads = argv("num_threads");
 
 to_xml_code =
 """
@@ -14,6 +15,7 @@ import params2xml
 import json
 
 params = json.loads('%s')
+params['parallel.omp_num_threads'] = '%s'
 default_config = '%s'
 xml_out = '%s'
 
@@ -38,7 +40,7 @@ foreach s,i in lines {
   string instance = "%s/instance_%i/" % (turbine_output, i+1);
   make_dir(instance) => {
     xml_out = instance + "config.xml";
-    code = to_xml_code % (s, default_xml_config, xml_out);
+    code = to_xml_code % (s, num_threads, default_xml_config, xml_out);
     file out <instance+"out.txt">;
     file err <instance+"err.txt">;
     python_persist(code, "'ignore'") =>

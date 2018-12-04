@@ -2,9 +2,9 @@
 
 set -eu
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
   script_name=$(basename $0)
-  echo "Usage: ${script_name} EXPERIMENT_ID INPUT_FILE (e.g. ${script_name} experiment_1 input.txt)"
+  echo "Usage: ${script_name} EXPERIMENT_ID INPUT_FILE num_threads (e.g. ${script_name} experiment_1 input.txt)"
   exit 1
 fi
 
@@ -56,6 +56,8 @@ DEFAULT_XML=$EMEWS_PROJECT_ROOT/data/PhysiCell_default_settings.xml
 CONFIG=$TURBINE_OUTPUT/default_config.xml
 cp $DEFAULT_XML $CONFIG
 
+NUM_THREADS=$3
+
 # set machine to your schedule type (e.g. pbs, slurm, cobalt etc.),
 # or empty for an immediate non-queued unscheduled run
 MACHINE=""
@@ -75,4 +77,4 @@ log_script
 set -x
 
 swift-t -n $PROCS $MACHINE -p $EMEWS_PROJECT_ROOT/swift/swift_run_sweep.swift \
-  -f="$INPUT_FILE" -model="$EXE" -config="$CONFIG" $CMD_LINE_ARGS
+  -f="$INPUT_FILE" -model="$EXE" -config="$CONFIG" -num_threads=$NUM_THREADS $CMD_LINE_ARGS
