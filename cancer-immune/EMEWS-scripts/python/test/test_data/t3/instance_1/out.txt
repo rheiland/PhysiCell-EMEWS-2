@@ -1,0 +1,131 @@
+Running /home/nick/Documents/repos/PhysiCell-EMEWS-2/cancer-immune/EMEWS-scripts/experiments/t3/cancer-immune-EMEWS2 /home/nick/Documents/repos/PhysiCell-EMEWS-2/cancer-immune/EMEWS-scripts/experiments/t3/instance_1/config.xml
+Using config file /home/nick/Documents/repos/PhysiCell-EMEWS-2/cancer-immune/EMEWS-scripts/experiments/t3/instance_1/config.xml ... 
+User parameters in XML config file: 
+Bool parameters:: 
+
+Int parameters:: 
+random_seed: 0 [dimensionless]
+number_of_immune_cells: 125 [dimensionless]
+
+Double parameters:: 
+immune_activation_time: 20160 [min]
+save_interval_after_therapy_start: 3 [min]
+immune_o2_relative_uptake: 0.1 [dimensionless]
+immune_apoptosis_rate: 0.000694 [1/min]
+immune_motility_persistence_time: 10 [min]
+immune_migration_speed: 1 [micron/min]
+immune_migration_bias: 0.1 [min]
+immune_relative_adhesion: 0 [dimensionless]
+immune_relative_repulsion: 5 [dimensionless]
+immune_kill_rate: 0.01 [1/min]
+immune_attachment_lifetime: 10 [min]
+immune_attachment_rate: 0.01 [1/min]
+elastic_coefficient: 0.01 [1/min]
+initial_min_immune_distance_from_tumor: 30 [micron]
+thickness_of_immune_seeding_region: 75 [micron]
+tumor_radius: 250 [micron]
+tumor_mean_immunogenicity: 1 [dimensionless]
+tumor_immunogenicity_standard_deviation: 0.05 [dimensionless]
+oncoprotein_saturation: 2 [dimensionless]
+oncoprotein_threshold: 0.1 [dimensionless]
+max_attachment_distance: 18 [micron]
+min_attachment_distance: 14 [micron]
+
+String parameters:: 
+
+
+
+Microenvironment summary: microenvironment: 
+
+Mesh information: 
+type: uniform Cartesian
+Domain: [-750,750] micron x [-750,750] micron x [-10,10] micron
+   resolution: dx = 20 micron
+   voxels: 5625
+   voxel faces: 0
+   volume: 4.5e+07 cubic micron
+Densities: (2 total)
+   oxygen:
+     units: mmHg
+     diffusion coefficient: 100000 micron^2 / min
+     decay rate: 0.1 min^-1
+     diffusion length scale: 1000 micron
+
+   immunostimulatory factor:
+     units: dimensionless
+     diffusion coefficient: 1000 micron^2 / min
+     decay rate: 0.016 min^-1
+     diffusion length scale: 250 micron
+
+
+creating 889 closely-packed tumor cells ... 
+
+Oncoprotein summary: 
+===================
+mean: 1.00137
+standard deviation: 0.0501474
+[min max]: [0.841107 1.14381]
+
+Using PhysiCell version 1.4.1
+	Please cite DOI: 10.1371/journal.pcbi.1005991
+	Project website: http://PhysiCell.MathCancer.org
+
+See ALL_CITATIONS.txt for this list.
+current simulated time: 0 min (max: 30240 min)
+total agents: 889
+interval wall time: 0 days, 0 hours, 0 minutes, and 5.5546e-05 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 6.019e-05 seconds 
+
+
+Using method diffusion_decay_solver__constant_coefficients_LOD_2D (2D LOD with Thomas Algorithm) ... 
+
+current simulated time: 60 min (max: 30240 min)
+total agents: 898
+interval wall time: 0 days, 0 hours, 0 minutes, and 8.5716 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 8.57166 seconds 
+
+current simulated time: 120 min (max: 30240 min)
+total agents: 902
+interval wall time: 0 days, 0 hours, 0 minutes, and 8.50972 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 17.0814 seconds 
+
+current simulated time: 180 min (max: 30240 min)
+total agents: 904
+interval wall time: 0 days, 0 hours, 0 minutes, and 7.40528 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 24.4867 seconds 
+
+current simulated time: 240 min (max: 30240 min)
+total agents: 909
+interval wall time: 0 days, 0 hours, 0 minutes, and 10.0472 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 34.5338 seconds 
+
+current simulated time: 300 min (max: 30240 min)
+total agents: 914
+interval wall time: 0 days, 0 hours, 0 minutes, and 8.33219 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 42.866 seconds 
+
+current simulated time: 360 min (max: 30240 min)
+total agents: 915
+interval wall time: 0 days, 0 hours, 0 minutes, and 16.9196 seconds 
+total wall time: 0 days, 0 hours, 0 minutes, and 59.7856 seconds 
+
+current simulated time: 420 min (max: 30240 min)
+total agents: 920
+interval wall time: 0 days, 0 hours, 0 minutes, and 7.32632 seconds 
+total wall time: 0 days, 0 hours, 1 minutes, and 7.11195 seconds 
+
+current simulated time: 480 min (max: 30240 min)
+total agents: 924
+interval wall time: 0 days, 0 hours, 0 minutes, and 7.83911 seconds 
+total wall time: 0 days, 0 hours, 1 minutes, and 14.9511 seconds 
+
+current simulated time: 540 min (max: 30240 min)
+total agents: 929
+interval wall time: 0 days, 0 hours, 0 minutes, and 10.0997 seconds 
+total wall time: 0 days, 0 hours, 1 minutes, and 25.0508 seconds 
+
+current simulated time: 600 min (max: 30240 min)
+total agents: 934
+interval wall time: 0 days, 0 hours, 0 minutes, and 10.356 seconds 
+total wall time: 0 days, 0 hours, 1 minutes, and 35.4068 seconds 
+
