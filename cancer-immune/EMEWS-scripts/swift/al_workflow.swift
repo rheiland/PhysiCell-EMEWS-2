@@ -4,8 +4,9 @@ import files;
 import location;
 import string;
 import EQR;
-import crx_model;
-import R_obj;
+import python;
+import R;
+//import R_obj;
 
 string emews_root = getenv("EMEWS_PROJECT_ROOT");
 string resident_work_ranks = getenv("RESIDENT_WORK_RANKS");
@@ -28,9 +29,8 @@ int n = toint(argv("n"));
 int trials = toint(argv("trials", "20"));
 string restart_file = argv("restart_file", "");
 
-printf("restart file '%s'", restart_file);
 
-to_xml_code =
+string to_xml_code =
 """
 import params2xml
 import json
@@ -59,7 +59,7 @@ string algo_params = """
   num_random_sampling = %i,
   random_sampling_decrease = 0,
   target_metric = "fscore",
-  target_metric_value = 0.99,
+  target_metric_value = 100.0,
   ntree = 20,
   restart_file = "%s",
   outdir = "%s"
@@ -78,7 +78,7 @@ string count_template =
 """
   instance_dir = '%s'
   count = get_metrics.get_tumor_cell_count(instance_dir)
-"""
+""";
   
 
 (string count) parse_tumor_cell_count(string instance) {
@@ -86,36 +86,30 @@ string count_template =
   count = python_persist(code, "str(count)");
 }
 
-(string combos[]) create_parameter_combinations(string params, int trials) {
-  foreach i in [0:trials-1:1] {
-    combos[i] = fromint(i) + "," + params;
-  }
-}
-
 // call this to create any required directories
 app (void o) make_dir(string dirname) {
   "mkdir" "-p" dirname;
 }
 
-app (file out, file err) run_model (file shfile, string param_file, string instance)
+app (file out, file err) run(file shfile, string param_file, string instance)
 {
     "bash" shfile exec param_file emews_root instance @stdout=out @stderr=err;
 }
 
-
 (string cls) run_model(string params, int iter, int p_num) {
     
     string results[];
-    string parameter_combos[] = create_parameter_combinations(params, trials);
+    // i is used as random seed in input xml
     foreach i in [0:trials-1:1] {
       string instance = "%s/instance_%i_%i_%i/" % (turbine_output, iter, p_num, i+1);
       make_dir(instance) => {
         xml_out = instance + "config.xml";
-        code = to_xml_code % (s, num_threads, i, tisd, default_xml_config, xml_out);
+        //printf("params: %s", params);
+        code = to_xml_code % (params, num_threads, i, tisd, default_xml_config, xml_out);
         file out <instance+"out.txt">;
         file err <instance+"err.txt">;
         python_persist(code, "'ignore'") =>
-        (out,err) = run_model(model_sh, xml_out, instance) =>
+        (out,err) = run(model_sh, xml_out, instance) =>
         results[i] = parse_tumor_cell_count(instance);
       }
     }
@@ -129,18 +123,18 @@ app (file out, file err) run_model (file shfile, string param_file, string insta
   "puts [concat \"@\" <<id>> \" time is: \" [clock milliseconds]]"
 ];
 
-(void o) al (int r_rank, int random_seed) {
+(void o) al (int r_rank) {
     location loc = locationFromRank(r_rank);
     EQR_init_script(loc, algorithm) =>
     EQR_get(loc) =>
     EQR_put(loc, algo_params) =>
-    doAL(loc,random_seed) => {
+    doAL(loc) => {
         EQR_stop(loc);
         o = propagate();
     }
 }
 
-(void v) doAL (location loc, int random_seed) {
+(void v) doAL (location loc) {
 
     for (boolean b = true, int i = 1;
        b;
@@ -153,7 +147,6 @@ app (file out, file err) run_model (file shfile, string param_file, string insta
     if (params == "FINAL") {
         string final_results =  EQR_get(loc);
         printf("Final results: %s", final_results) =>
-        @par=procs_per_run crx_model_run("", "") =>
         v = make_void() =>
         c = false;
     } else if (params == "EQR_ABORT") {
@@ -179,4 +172,4 @@ app (file out, file err) run_model (file shfile, string param_file, string insta
 printf("WORKFLOW!");
 
 printf("algorithm: %s", algorithm);
-al(toint(r_ranks[0]),0);
+al(toint(r_ranks[0]));

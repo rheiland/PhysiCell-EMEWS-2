@@ -2,11 +2,14 @@
 
 set -eu
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 2 ]; then
   script_name=$(basename $0)
-  echo "Usage: ${script_name} EXPERIMENT_ID INPUT_FILE num_threads (e.g. ${script_name} experiment_1 input.txt)"
+  echo "Usage: ${script_name} EXPERIMENT_ID  num_threads (e.g. ${script_name} experiment_1 4)"
   exit 1
 fi
+
+SWIFT_T=/home/nick/sfw/swift-t-4c8f0afd
+PATH=$SWIFT_T/stc/bin:$PATH
 
 
 # uncomment to turn on swift/t logging. Can also set TURBINE_LOG,
@@ -18,7 +21,7 @@ source "${EMEWS_PROJECT_ROOT}/etc/emews_utils.sh"
 
 export EXPID=$1
 export TURBINE_OUTPUT=$EMEWS_PROJECT_ROOT/experiments/$EXPID
-# check_directory_exists
+#check_directory_exists
 
 # TODO edit the number of processes as required.
 # 1040
@@ -34,20 +37,19 @@ export TURBINE_JOBNAME="${EXPID}_job"
 export PYTHONPATH=$EMEWS_PROJECT_ROOT/python
 
 CMD_LINE_ARGS="$*"
-INPUT_FILE=$EMEWS_PROJECT_ROOT/data/$2
 
 mkdir -p $TURBINE_OUTPUT
 
 EXECUTABLE=cancer-immune-EMEWS2
 EP=$EMEWS_PROJECT_ROOT/../PhysiCell-src/$EXECUTABLE
 EXE=$TURBINE_OUTPUT/$EXECUTABLE
-cp  $EP $EXE
+cp $EP $EXE
 
 DEFAULT_XML=$EMEWS_PROJECT_ROOT/data/PhysiCell_default_settings.xml
 CONFIG=$TURBINE_OUTPUT/default_config.xml
 cp $DEFAULT_XML $CONFIG
 
-NUM_THREADS=$3
+NUM_THREADS=$2
 
 # if R cannot be found, then these will need to be
 # uncommented and set correctly.
