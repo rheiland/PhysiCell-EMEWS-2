@@ -131,7 +131,7 @@ main_function <- function(data_file,
   }
   sdf.ev_is <- which(sdf$ev)
   print(length(sdf.ev_is))
-  
+
   train_control <- trainControl(method="repeatedcv", number=10, repeats = 1, sampling = "up",
                                 classProbs = T, summaryFunction = aprfSummary)
   stat_names <- c("accuracy","precision","recall","fscore")
@@ -150,7 +150,7 @@ main_function <- function(data_file,
   # Predict on all of P_unev
   sdf.unev_is <- which(!sdf$ev)
   pred <- predict(model,newdata = sdf[sdf.unev_is,data_cols], type = "raw")
-  
+
   while(iter < max_iter) { #& model$results[target_metric] < target_metric_value) {
     iter <- iter + 1
     unev_prob <- predict(model,newdata = sdf[sdf.unev_is,data_cols], type = "prob")
@@ -265,6 +265,7 @@ l <- eval(parse(text = paste0("list(",res,")")))
 #print(l)
 
 res2 <- do.call(main_function,l)
+saveRDS(res2, file=paste0(outdir, "/result.Rds"))
 OUT_put("FINAL")
 
 OUT_put("Look at df.Rds for final model")
