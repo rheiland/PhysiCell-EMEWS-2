@@ -11,7 +11,6 @@ import R;
 string emews_root = getenv("EMEWS_PROJECT_ROOT");
 string resident_work_ranks = getenv("RESIDENT_WORK_RANKS");
 string turbine_output = getenv("TURBINE_OUTPUT");
-int procs_per_run = toint(getenv("PROCS_PER_RUN"));
 file model_sh = input(emews_root+"/scripts/cancer-emews.sh");
 string exec = argv("model");
 string default_xml_config = argv("config");
@@ -68,18 +67,20 @@ string algo_params = """
 
 string result_template =
 """
-  x <- c(%s)
-  x <- x[ x >= 0 ]
+x <- c(%s)
+x <- x[ x >= 0 ]
 
-  res <- ifelse(length(x) > 0 && mean(x) < 900, 'X0', 'X1') 
+res <- ifelse(length(x) > 0 && mean(x) < 900, 'X0', 'X1')
 """;
 
-string count_template = 
+string count_template =
 """
-  instance_dir = '%s'
-  count = get_metrics.get_tumor_cell_count(instance_dir)
+import get_metrics
+
+instance_dir = '%s'
+count = get_metrics.get_tumor_cell_count(instance_dir)
 """;
-  
+
 
 (string count) parse_tumor_cell_count(string instance) {
   code = count_template % instance;
@@ -97,7 +98,7 @@ app (file out, file err) run(file shfile, string param_file, string instance)
 }
 
 (string cls) run_model(string params, int iter, int p_num) {
-    
+
     string results[];
     // i is used as random seed in input xml
     foreach i in [0:trials-1:1] {
@@ -114,7 +115,7 @@ app (file out, file err) run(file shfile, string param_file, string instance)
       }
     }
 
-    string result = string_join(results, "\n");
+    string result = string_join(results, ",");
     string code = result_template % result;
     cls = R(code, "toString(res)");
 }

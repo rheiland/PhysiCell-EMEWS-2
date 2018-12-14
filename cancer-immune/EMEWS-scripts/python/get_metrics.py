@@ -1,4 +1,4 @@
-import os, sys, glob, pandas as pd
+import os, sys, glob
 
 def get_tumor_cell_count(instance_dir):
     """
@@ -18,6 +18,8 @@ def get_tumor_cell_count(instance_dir):
     return tumor_cell_count
 
 def main(root_dir, upf, results_file):
+    import pandas as pd
+
     df = pd.read_csv(upf)
     df['instance'] = df.index + 1
     df['tumor_cell_count'] = -2
@@ -29,7 +31,7 @@ def main(root_dir, upf, results_file):
         df.ix[instance - 1, 'tumor_cell_count'] = count
         #print('{} {}: {}'.format(instance, f, count))
         #print(df.head())
-    
+
     df.to_csv(results_file, index=False)
 
 if __name__ == "__main__":
