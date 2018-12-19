@@ -1,6 +1,6 @@
 import os, sys, glob
 
-def get_tumor_cell_count(instance_dir):
+def get_tumor_cell_count(instance_dir, max_time):
     """
     @return tumor cell count value from fname or -2, if file doesn't exist, or
     -1 if run terminated prematurely.
@@ -12,7 +12,7 @@ def get_tumor_cell_count(instance_dir):
             tumor_cell_count = '-1'
             line = f_in.readlines()[-1].strip()
             items = line.split("\t")
-            if len(items) > 1 and items[0] == '30240':
+            if len(items) > 1 and items[0] == max_time:
                 tumor_cell_count = items[1]
 
     return tumor_cell_count
@@ -27,7 +27,7 @@ def main(root_dir, upf, results_file):
     files = glob.glob('{}/instance_*'.format(root_dir))
     for f in files:
         instance = int(f[f.rfind("_") + 1 :])
-        count = int(get_tumor_cell_count(f))
+        count = int(get_tumor_cell_count(f, '30240'))
         df.ix[instance - 1, 'tumor_cell_count'] = count
         #print('{} {}: {}'.format(instance, f, count))
         #print(df.head())
