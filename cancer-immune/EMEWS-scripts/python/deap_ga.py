@@ -99,7 +99,11 @@ def update_init_pop(pop, params_file):
     if len(pop) > len(init_params):
         raise ValueError("Not enough initial params to set the population: size of init params < population size")
 
-    sampled_params = random.sample(init_params, len(pop))
+    # first 12 are best ones
+    sampled_params = init_params[0:12]
+    sample_size = len(pop) - 12
+    if sample_size > 0:
+        sampled_params = sampled_params + random.sample(init_params[12:], sample_size)
     for i, indiv in enumerate(pop):
         for j, param in enumerate(ga_params):
             indiv[j] = param.parse(sampled_params[i][param.name])
