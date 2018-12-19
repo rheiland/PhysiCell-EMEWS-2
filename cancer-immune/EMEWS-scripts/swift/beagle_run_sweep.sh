@@ -2,19 +2,16 @@
 
 set -eu
 
-if [[ ${PROJECT:-} == "" ]]
-then
-  echo "Error: You need to set environment variable PROJECT."
-  exit 1
-fi
+export PROJECT=CI-CCR000040
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
   script_name=$(basename $0)
-  echo "Usage: ${script_name} EXPERIMENT_ID INPUT_FILE (e.g. ${script_name} experiment_1 input.txt)"
+  echo "Usage: ${script_name} EXPERIMENT_ID INPUT_FILE num_threads (e.g. ${script_name} experiment_1 input.txt)"
   exit 1
 fi
 
-PATH=/lustre/beagle2/wozniak/Public/sfw/swift-t/py2Lr/stc/bin:$PATH
+SWIFT_T=/lustre/beagle2/ncollier/sfw/swift-t-12042018
+PATH=$SWIFT_T/stc/bin:$PATH
 
 # uncomment to turn on swift/t logging. Can also set TURBINE_LOG,
 # TURBINE_DEBUG, and ADLB_DEBUG to 0 to turn off logging
@@ -28,24 +25,22 @@ export TURBINE_OUTPUT=$EMEWS_PROJECT_ROOT/experiments/$EXPID
 check_directory_exists
 
 # TODO edit the number of processes as required.
-export PROCS=272
+export PROCS=1024
 
 # TODO edit QUEUE, WALLTIME, PPN, AND TURNBINE_JOBNAME
 # as required. Note that QUEUE, WALLTIME, PPN, AND TURNBINE_JOBNAME will
 # be ignored if the MACHINE variable (see below) is not set.
 export QUEUE=batch
-export WALLTIME=60:00:00
-export PPN=1
+export WALLTIME=05:30:00
+export PPN=8
 export TURBINE_JOBNAME="${EXPID}_job"
-
-# export TURBINE_DIRECTIVE="#PBS -l advres=stevens.4042"
 
 # if R cannot be found, then these will need to be
 # uncommented and set correctly.
 # export R_HOME=/path/to/R
 # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$R_HOME/lib
 # if python packages can't be found, then uncommited and set this
-# export PYTHONPATH=/path/to/python/packages
+export PYTHONPATH=$EMEWS_PROJECT_ROOT/python
 
 
 # TODO edit command line arguments as appropriate
@@ -53,6 +48,19 @@ export TURBINE_JOBNAME="${EXPID}_job"
 # command line arguments to the swift script.
 CMD_LINE_ARGS="$*"
 INPUT_FILE=$EMEWS_PROJECT_ROOT/data/$2
+
+mkdir -p $TURBINE_OUTPUT
+
+EXECUTABLE=cancer-immune-EMEWS2
+EP=$EMEWS_PROJECT_ROOT/../PhysiCell-src/$EXECUTABLE
+EXE=$TURBINE_OUTPUT/$EXECUTABLE
+cp  $EP $EXE
+
+DEFAULT_XML=$EMEWS_PROJECT_ROOT/data/PhysiCell_default_settings.xml
+CONFIG=$TURBINE_OUTPUT/default_config.xml
+cp $DEFAULT_XML $CONFIG
+
+NUM_THREADS=$3
 
 # set machine to your schedule type (e.g. pbs, slurm, cobalt etc.),
 # or empty for an immediate non-queued unscheduled run
@@ -69,8 +77,15 @@ USER_VARS=()
 # log variables and script to to TURBINE_OUTPUT directory
 log_script
 
+module swap PrgEnv-cray PrgEnv-gnu
+#LD_LIBRARY_PATH=/opt/gcc/4.9.2/snos/lib64:$LD_LIBRARY_PATH
+
 # echo's anything following this standard out
 set -x
 
 swift-t -n $PROCS $MACHINE -p $EMEWS_PROJECT_ROOT/swift/swift_run_sweep.swift \
-  -f="$INPUT_FILE" $CMD_LINE_ARGS
+  -e LD_LIBRARY_PATH=$LD_LIBRARY_PATH \
+  -e EMEWS_PROJECT_ROOT=$EMEWS_PROJECT_ROOT \
+  -e TURBINE_OUTPUT=$TURBINE_OUTPUT \
+  -e PYTHONPATH=$PYTHONPATH \
+  -f="$INPUT_FILE" -model="$EXE" -config="$CONFIG" -num_threads=$NUM_THREADS $CMD_LINE_ARGS
