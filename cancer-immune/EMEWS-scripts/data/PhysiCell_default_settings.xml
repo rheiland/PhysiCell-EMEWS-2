@@ -32,7 +32,7 @@
 		
 		<SVG>
 			<interval units="min">60</interval>
-			<enable>true</enable>
+			<enable>false</enable>
 		</SVG>
 		
 		<legacy_data>

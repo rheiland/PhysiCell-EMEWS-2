@@ -1,0 +1,49 @@
+[
+    {
+        "name" : "user_parameters.immune_apoptosis_rate",
+        "type" : "float",
+        "lower" : 6.94e-6,
+        "upper" : 6.94e-4,
+        "sigma": 0.000034353
+    },
+
+    {
+        "name" : "user_parameters.immune_migration_bias",
+        "type" : "float",
+        "lower" : 0.1,
+        "upper" : 0.9,
+        "sigma": 0.04
+    },
+
+    {
+        "name" : "user_parameters.immune_kill_rate",
+        "type" : "float",
+        "lower" : 0.01,
+        "upper" : 1.0,
+        "sigma": 0.0495
+    },
+
+    {
+        "name" : "user_parameters.immune_attachment_lifetime",
+        "type" : "float",
+        "lower" : 10.0,
+        "upper" : 90.0,
+        "sigma": 4
+    },
+
+    {
+        "name" : "user_parameters.immune_attachment_rate",
+        "type" : "float",
+        "lower" : 0.01,
+        "upper" : 1.0,
+        "sigma": 0.0495
+    },
+
+    {
+        "name" : "user_parameters.oncoprotein_threshold",
+        "type" : "float",
+        "lower" : 0.1,
+        "upper" : 1.0,
+        "sigma": 0.045
+    } 
+]
