@@ -48,7 +48,7 @@ EQPY=$EMEWS_PROJECT_ROOT/ext/EQ-Py
 # for your EQ/Py based run. $* will pass all of this script's
 # command line arguments to the swift script
 SEED=1234
-ITERS=1
+ITERS=3
 NUM_VARIATIONS=1
 NUM_POP=3
 
@@ -80,6 +80,9 @@ CONFIG=$TURBINE_OUTPUT/default_config.xml
 cp $DEFAULT_XML $CONFIG
 
 NUM_THREADS=$4
+
+CLASSIFIER=$EMEWS_PROJECT_ROOT/data/rf.pkl
+SCALER=$EMEWS_PROJECT_ROOT/data/scaler.pkl
 
 # Uncomment this for the BG/Q:
 #export MODE=BGQ QUEUE=default
@@ -116,4 +119,6 @@ swift-t -n $PROCS $MACHINE -p  -I $EQPY -r $EQPY \
     -model="$EXE" \
     -config="$CONFIG" \
     -num_threads=$NUM_THREADS \
-    -tisd=$TISD
+    -tisd=$TISD \
+    -classifier=$CLASSIFIER \
+    -scaler=$SCALER

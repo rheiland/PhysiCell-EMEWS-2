@@ -25,6 +25,9 @@ string num_threads = argv("num_threads");
 string tisd = argv("tisd");
 
 string init_population = argv("init_population", "");
+string classifer_path = argv("classifier", "");
+string scaler_path = argv("scaler", "");
+
 string strategy = argv("strategy");
 string ga_params = argv("ga_params");
 float mut_prob = string2float(argv("mutation_prob", "0.2"));
@@ -40,7 +43,7 @@ params['user_parameters.random_seed'] = '%s'
 params['user_parameters.tumor_immunogenicity_standard_deviation'] = '%s'
 
 #debug
-#params['overall.max_time'] = 600
+# params['overall.max_time'] = 600
 
 default_config = '%s'
 xml_out = '%s'
@@ -152,8 +155,8 @@ app (file out, file err) run(file shfile, string param_file, string instance)
 (void o) start (int ME_rank, int num_iter, int pop_size, int trials, int seed) {
   location deap_loc = locationFromRank(ME_rank);
   // num_iter, num_pop, seed, strategy, mut_prob, ga_params_file, param_file
-  algo_params = "%d,%d,%d,'%s',%f,'%s','%s'" %  (num_iter, pop_size, seed, 
-                strategy, mut_prob, ga_params, init_population);
+  algo_params = "%d,%d,%d,'%s',%f,'%s','%s', '%s', '%s'" %  (num_iter, pop_size, seed, 
+                strategy, mut_prob, ga_params, init_population, classifer_path, scaler_path);
                   
     EQPy_init_package(deap_loc,"deap_ga") =>
     EQPy_get(deap_loc) =>

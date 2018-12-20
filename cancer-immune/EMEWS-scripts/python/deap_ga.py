@@ -6,6 +6,7 @@ import csv
 import json
 import sys
 import time
+import pickle
 
 import stats as sts
 
@@ -17,19 +18,94 @@ from deap import algorithms
 import eqpy, ga_utils
 
 # list of ga_utils parameter objects
-ga_params = None
+transformer = None
 
+
+class Transformer:
+
+    def __init__(self, ga_params, clf = None, scaler = None):
+        self.ga_params = ga_params
+
+    def check_constraint(self, pt):
+        return True
+
+    def mutate(self, population, indpb):
+        """
+        Mutates the values in list individual with probability indpb
+        """
+
+        # Note, if we had some aggregate constraint on the individual
+        # (e.g. individual[1] * individual[2] < 10), we could copy
+        # individual into a temporary list and mutate though until the
+        # constraint was satisfied
+        for i, param in enumerate(self.ga_params):
+            individual = param.mutate(population[i], mu=0, indpb=indpb)
+            for _ in range(100):
+                if self.check_constraint(individual):
+                    break
+                individual = param.mutate(population[i], mu=0, indpb=indpb)
+            
+            population[i] = individual
+
+        return population,
+
+    def cxUniform(self, ind1, ind2, indpb):
+        for _ in range(100):
+            c1, c2 = tools.cxUniform(ind1, ind2, indpb)
+            if self.check_constraint(c1) and self.check_constraint(c2):
+                break
+
+        return (c1, c2)
+
+    def random_params(self):
+        draws = []
+        for p in self.ga_params:
+            draws.append(p.randomDraw())
+
+        return draws
+
+    def parse_init_params(self, params_file):
+        init_params = []
+        with open(params_file) as f_in:
+            reader = csv.reader(f_in)
+            header = next(reader)
+            for row in reader:
+                init_params.append(dict(zip(header,row)))
+        return init_params
+
+    def update_init_pop(self, pop, params_file):
+    
+        printf("Reading initial population from {}".format(params_file))
+        init_params = self.parse_init_params(params_file)
+        if len(pop) > len(init_params):
+            raise ValueError("Not enough initial params to set the population: size of init params < population size")
+
+        # first 12 are best ones
+        sampled_params = init_params[0:12]
+        sample_size = len(pop) - 12
+        if sample_size > 0:
+            sampled_params = sampled_params + random.sample(init_params[12:], sample_size)
+        for i, indiv in enumerate(pop):
+            for j, param in enumerate(self.ga_params):
+                indiv[j] = param.parse(sampled_params[i][param.name])
+
+class ConstrainingTransformer(Transformer):
+
+    def __init__(self, ga_params, clf, scaler):
+        Transformer.__init__(self, ga_params)
+        self.clf = clf
+        self.scaler = scaler
+
+    def check_constraint(self, pt):
+        spt = self.scaler.transform([pt])
+        res = self.clf.predict(spt)
+        return res == 0
+        
 def printf(val):
     print(val)
     sys.stdout.flush()
 
 def obj_func(x):
-    return 0
-
-def simple_mean(val):
-    printf("arg: {}".format(val))
-    printf("type: {}".format(type(val)))
-
     return 0
 
 # {"batch_size":512,"epochs":51,"activation":"softsign",
@@ -38,10 +114,10 @@ def simple_mean(val):
 def create_list_of_json_strings(list_of_lists, super_delim=";"):
     # create string of ; separated jsonified maps
     res = []
-    global ga_params
+    global transformer
     for l in list_of_lists:
         jmap = {}
-        for i,p in enumerate(ga_params):
+        for i,p in enumerate(transformer.ga_params):
             jmap[p.name] = l[i]
 
         jstring = json.dumps(jmap)
@@ -64,49 +140,44 @@ def queue_map(obj_func, pops):
     # [[a,b,c,d],[e,f,g,h],...]
     if not pops:
         return []
+
     eqpy.OUT_put(create_list_of_json_strings(pops))
     result = eqpy.IN_get()
     split_result = result.split(';')
     # TODO determine if max'ing or min'ing and use -9999999 or 99999999
     return [(float(x),) if not math.isnan(float(x)) else (float(99999999),) for x in split_result]
+    
     #return [(float(x),) for x in split_result]
 
 def make_random_params():
     """
     Performs initial random draw on each parameter
     """
-    global ga_params
+    return transformer.random_params()
+    # global ga_params
 
-    draws = []
-    for p in ga_params:
-        draws.append(p.randomDraw())
+    # draws = []
+    # for p in ga_params:
+    #     draws.append(p.randomDraw())
 
-    return draws
-
-def parse_init_params(params_file):
-    init_params = []
-    with open(params_file) as f_in:
-        reader = csv.reader(f_in)
-        header = next(reader)
-        for row in reader:
-            init_params.append(dict(zip(header,row)))
-    return init_params
+    # return draws
 
 def update_init_pop(pop, params_file):
-    global ga_params
-    printf("Reading initial population from {}".format(params_file))
-    init_params = parse_init_params(params_file)
-    if len(pop) > len(init_params):
-        raise ValueError("Not enough initial params to set the population: size of init params < population size")
+    transformer.update_init_pop(pop, params_file)
+    # global ga_params
+    # printf("Reading initial population from {}".format(params_file))
+    # init_params = parse_init_params(params_file)
+    # if len(pop) > len(init_params):
+    #     raise ValueError("Not enough initial params to set the population: size of init params < population size")
 
-    # first 12 are best ones
-    sampled_params = init_params[0:12]
-    sample_size = len(pop) - 12
-    if sample_size > 0:
-        sampled_params = sampled_params + random.sample(init_params[12:], sample_size)
-    for i, indiv in enumerate(pop):
-        for j, param in enumerate(ga_params):
-            indiv[j] = param.parse(sampled_params[i][param.name])
+    # # first 12 are best ones
+    # sampled_params = init_params[0:12]
+    # sample_size = len(pop) - 12
+    # if sample_size > 0:
+    #     sampled_params = sampled_params + random.sample(init_params[12:], sample_size)
+    # for i, indiv in enumerate(pop):
+    #     for j, param in enumerate(ga_params):
+    #         indiv[j] = param.parse(sampled_params[i][param.name])
 
 # keep as reference for log type
 # def mutGaussian_log(x, mu, sigma, mi, mx, indpb):
@@ -122,24 +193,39 @@ def custom_mutate(individual, indpb):
     """
     Mutates the values in list individual with probability indpb
     """
+    return transformer.mutate(individual, indpb)
 
-    # Note, if we had some aggregate constraint on the individual
-    # (e.g. individual[1] * individual[2] < 10), we could copy
-    # individual into a temporary list and mutate though until the
-    # constraint was satisfied
+    # # Note, if we had some aggregate constraint on the individual
+    # # (e.g. individual[1] * individual[2] < 10), we could copy
+    # # individual into a temporary list and mutate though until the
+    # # constraint was satisfied
 
-    global ga_params
-    for i, param in enumerate(ga_params):
-        individual[i] = param.mutate(individual[i], mu=0, indpb=indpb)
+    # global ga_params
+    # for i, param in enumerate(ga_params):
+    #     individual[i] = param.mutate(individual[i], mu=0, indpb=indpb)
 
-    return individual,
+    # return individual,
 
 def cxUniform(ind1, ind2, indpb):
-    c1, c2 = tools.cxUniform(ind1, ind2, indpb)
-    return (c1, c2)
+    return transformer.cxUniform(ind1, ind2, indpb)
+    # c1, c2 = tools.cxUniform(ind1, ind2, indpb)
+    # return (c1, c2)
 
 def timestamp(scores):
     return str(time.time())
+
+def create_transformer(ga_params, classifier_path, scaler_path):
+    global transformer
+    if classifier_path == "":
+        transformer = Transformer(ga_params)
+    else:
+        with open(classifier_path, 'rb') as f_in:
+            clf = pickle.load(f_in)
+
+        with open (scaler_path, 'rb') as f_in:
+            scaler = pickle.load(f_in)
+        
+        transformer = ConstrainingTransformer(ga_params, clf, scaler)
 
 def run():
     """
@@ -154,10 +240,10 @@ def run():
     params = eqpy.IN_get()
 
     # parse params
-    (num_iter, num_pop, seed, strategy, mut_prob, ga_params_file, param_file) = eval('{}'.format(params))
+    (num_iter, num_pop, seed, strategy, mut_prob, ga_params_file, param_file, classifer_path, scaler_path) = eval('{}'.format(params))
     random.seed(seed)
-    global ga_params
     ga_params = ga_utils.create_parameters(ga_params_file)
+    create_transformer(ga_params, classifer_path, scaler_path)
 
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMin)
