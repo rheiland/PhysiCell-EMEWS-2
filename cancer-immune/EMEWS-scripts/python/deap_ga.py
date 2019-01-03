@@ -240,6 +240,7 @@ def run():
     params = eqpy.IN_get()
 
     # parse params
+    printf("Parameters: {}".format(params))
     (num_iter, num_pop, seed, strategy, mut_prob, ga_params_file, param_file, classifer_path, scaler_path) = eval('{}'.format(params))
     random.seed(seed)
     ga_params = ga_utils.create_parameters(ga_params_file)

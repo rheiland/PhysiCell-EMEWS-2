@@ -54,8 +54,8 @@ NUM_POP=3
 
 TISD=0.25
 
-STRATEGY="mu_plus_lambda"
-#STRATEGY="simple"
+#STRATEGY="mu_plus_lambda"
+STRATEGY="simple"
 # original was 0.2
 MUTATION_PROB=0.2
 
@@ -66,9 +66,14 @@ PARAMS_FILE=$TURBINE_OUTPUT/ga_params.json
 cp $GA_PARAMS_FILE $PARAMS_FILE
 
 INIT_POP=$3
-INITIAL_POPULATION=$TURBINE_OUTPUT/init_pop.csv
-cp $INIT_POP $INITIAL_POPULATION
-
+if [ ! -z "$INIT_POP" ]
+then
+  INITIAL_POPULATION=$TURBINE_OUTPUT/init_pop.csv
+  cp $INIT_POP $INITIAL_POPULATION
+  INIT_POP_ARG="-init_population=$INITIAL_POPULATION"
+else
+  INIT_POP_ARG=""
+fi
 
 EXECUTABLE=cancer-immune-EMEWS2
 EP=$EMEWS_PROJECT_ROOT/../PhysiCell-src/$EXECUTABLE
@@ -81,8 +86,18 @@ cp $DEFAULT_XML $CONFIG
 
 NUM_THREADS=$4
 
-CLASSIFIER=$EMEWS_PROJECT_ROOT/data/rf.pkl
-SCALER=$EMEWS_PROJECT_ROOT/data/scaler.pkl
+#CLASSIFIER=$EMEWS_PROJECT_ROOT/data/rf.pkl
+CLASSIFIER=""
+#SCALER=$EMEWS_PROJECT_ROOT/data/scaler.pkl
+SCALER=""
+
+if [ ! -z $CLASSIFIER ]; then
+  CLASSIFIER_ARG="-classifier=$CLASSIFIER"
+  SCALER_ARG="-scaler=$SCALER"
+else
+  CLASSIFIER_ARG=""
+  SCALER_ARG=""
+fi
 
 # Uncomment this for the BG/Q:
 #export MODE=BGQ QUEUE=default
@@ -114,11 +129,11 @@ swift-t -n $PROCS $MACHINE -p  -I $EQPY -r $EQPY \
     -seed=$SEED \
     -strategy=$STRATEGY \
     -ga_params=$PARAMS_FILE \
-    -init_population=$INITIAL_POPULATION \
+    $INIT_POP_ARG \
     -mutation_prob=$MUTATION_PROB \
     -model="$EXE" \
     -config="$CONFIG" \
     -num_threads=$NUM_THREADS \
     -tisd=$TISD \
-    -classifier=$CLASSIFIER \
-    -scaler=$SCALER
+    $CLASSIFIER_ARG \
+    $SCALER_ARG
