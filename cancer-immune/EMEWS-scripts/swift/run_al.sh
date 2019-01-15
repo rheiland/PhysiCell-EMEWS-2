@@ -68,9 +68,10 @@ EQR=$SWIFT_T/ext/EQ-R
 NUM_CLUSTERS=5
 NUM_RANDOM_SAMPLING=5
 MAX_ITER=2
-TRIALS=20
+TRIALS=2
 N=2
 TISD=0.25
+TC_CUTOFF=0.1
 
 # TODO edit command line arguments, e.g. -nv etc., as appropriate
 # for your EQ/Py based run. Note that $* will pass any of this
@@ -122,4 +123,5 @@ swift-t -n $PROCS $MACHINE -p -r $MODEL_DIR -I $MODEL_DIR  -r $EQR -I $EQR \
   -model="$EXE" \
   -config="$CONFIG" \
   -num_threads=$NUM_THREADS \
-  -tisd=$TISD
+  -tisd=$TISD \
+  -tc_cutoff=$TC_CUTOFF

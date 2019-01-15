@@ -16,6 +16,7 @@ string exec = argv("model");
 string default_xml_config = argv("config");
 string num_threads = argv("num_threads");
 string tisd = argv("tisd");
+float tc_cutoff = tofloat(argv("tc_cutoff", "1.0"));
 
 
 string r_ranks[] = split(resident_work_ranks,",");
@@ -38,6 +39,10 @@ params = json.loads('%s')
 params['parallel.omp_num_threads'] = '%s'
 params['user_parameters.random_seed'] = '%s'
 params['user_parameters.tumor_immunogenicity_standard_deviation'] = '%s'
+
+# debug
+# params['overall.max_time'] = 600
+
 default_config = '%s'
 xml_out = '%s'
 
@@ -69,8 +74,9 @@ string result_template =
 """
 x <- c(%s)
 x <- x[ x >= 0 ]
-
-res <- ifelse(length(x) > 0 && mean(x) < 900, 'X0', 'X1')
+tc_cutoff <- (900 * %f)
+print(tc_cutoff)
+res <- ifelse(length(x) > 0 && mean(x) < tc_cutoff, 'X0', 'X1')
 """;
 
 string count_template =
@@ -78,7 +84,8 @@ string count_template =
 import get_metrics
 
 instance_dir = '%s'
-count = get_metrics.get_tumor_cell_count(instance_dir)
+# '30240'
+count = get_metrics.get_tumor_cell_count(instance_dir, '30240')
 """;
 
 
@@ -116,7 +123,7 @@ app (file out, file err) run(file shfile, string param_file, string instance)
     }
 
     string result = string_join(results, ",");
-    string code = result_template % result;
+    string code = result_template % (result, tc_cutoff);
     cls = R(code, "toString(res)");
 }
 
