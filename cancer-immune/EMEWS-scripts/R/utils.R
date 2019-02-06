@@ -14,7 +14,7 @@ list_to_string <- function(x){
 }
 
 elements_of_lists_to_json <- function(x){
-  js <- sapply(split(x, 1:nrow(x)),toJSON)
+  js <- sapply(split(x, 1:nrow(x)), function(y) toJSON(y, digits=NA))
   js_strip <- sapply(js, function(x) {
     substr(x, 2, nchar(x) - 1)
   })
