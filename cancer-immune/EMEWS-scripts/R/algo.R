@@ -57,7 +57,7 @@ get_accuracy_precision_recall_fscore <- function(confusion,positive){
 # summary statistics
 aprfSummary <- function(data, lev = NULL, model = NULL){
   cf <- confusionMatrix(data[,"pred"], data[,"obs"])
-  unlist(get_accuracy_precision_recall_fscore(as.matrix(cf),lev[2]))
+  unlist(get_accuracy_precision_recall_fscore(as.matrix(cf), "X0"))
 }
 
 # main active learning function
@@ -129,6 +129,7 @@ main_function <- function(data_file,
   	OUT_put("Error: only found 1 class from random sampling, try sampling more or changing threshold")
   	return("ending early")
   }
+
   sdf.ev_is <- which(sdf$ev)
   print(length(sdf.ev_is))
 
@@ -262,10 +263,9 @@ OUT_put("Params")
 res <- IN_get()
 
 l <- eval(parse(text = paste0("list(",res,")")))
-#print(l)
 
 res2 <- do.call(main_function,l)
-saveRDS(res2, file=paste0(outdir, "/result.Rds"))
+saveRDS(res2, file=paste0(l$outdir, "/result.Rds"))
 OUT_put("FINAL")
 
 OUT_put("Look at df.Rds for final model")
