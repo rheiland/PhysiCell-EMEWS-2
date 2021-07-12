@@ -33,7 +33,7 @@
 #                                                                             #
 # BSD 3-Clause License (see https://opensource.org/licenses/BSD-3-Clause)     #
 #                                                                             #
-# Copyright (c) 2015-2018, Paul Macklin and the PhysiCell Project             #
+# Copyright (c) 2015-2021, Paul Macklin and the PhysiCell Project             #
 # All rights reserved.                                                        #
 #                                                                             #
 # Redistribution and use in source and binary forms, with or without          #
@@ -75,10 +75,11 @@
 
 #include "../BioFVM/BioFVM.h" 
 
+#include "../modules/PhysiCell_settings.h"
+
 using namespace BioFVM; 
 
 namespace PhysiCell{
-
 class Cell;
 class Cycle_Model; 
 class Phenotype; 
@@ -329,8 +330,6 @@ class Volume
 	
 	void divide( void ); // done 
 	void multiply_by_ratio(double); // done 
-	
-	void update( Cell* pCell, Phenotype& phenotype, double dt ); // done 
 };
 
 class Geometry
@@ -353,6 +352,7 @@ class Geometry
 
 class Mechanics
 {
+ private:
  public:
 	double cell_cell_adhesion_strength; 
 	double cell_BM_adhesion_strength;
@@ -363,6 +363,12 @@ class Mechanics
 	double relative_maximum_adhesion_distance; 
 	// double maximum_adhesion_distance; // needed? 
 	
+	double relative_maximum_attachment_distance; 
+	double relative_detachment_distance; 
+	
+	int maximum_number_of_attachments; 
+	double attachment_elastic_constant; 
+	double maximum_attachment_rate; 
 	
 	Mechanics(); // done 
 	
@@ -393,6 +399,9 @@ class Motility
 		// if true, set random motility to 2D only. 
 		
 	std::vector<double> motility_vector; 
+	
+	int chemotaxis_index; 
+	int chemotaxis_direction; 
 		
 	Motility(); // done 
 };
@@ -406,6 +415,7 @@ class Secretion
 	std::vector<double> secretion_rates; 
 	std::vector<double> uptake_rates; 
 	std::vector<double> saturation_densities;
+	std::vector<double> net_export_rates; 
 	
 	// in the default constructor, we'll size to the default microenvironment, if 
 	// specified. (This ties to BioFVM.) 
@@ -447,8 +457,145 @@ class Cell_Functions
 	
 	void (*contact_function)(Cell* pMyself, Phenotype& my_phenotype, 
 		Cell* pOther, Phenotype& other_phenotype, double dt ); 
+		
+	/* prototyping / beta in 1.5.0 */ 
+/*	
+	void (*internal_substrate_function)(Cell* pCell, Phenotype& phenotype , double dt ); 
+	void (*molecular_model_function)(Cell* pCell, Phenotype& phenotype , double dt ); 
+*/
 	
 	Cell_Functions(); // done 
+};
+
+class Bools
+{
+	public:
+		std::vector<bool> values; 
+		std::unordered_map<std::string,int> name_map; 
+		std::string& name( int i ); 
+		std::vector<std::string> units; 
+		
+		int size( void ); 
+		void resize( int n ); 
+		int add( std::string name , std::string units , bool value ); 
+		
+		bool& operator[]( int i ); 
+		bool& operator[]( std::string name ); 
+		
+		Bools(); 
+};
+
+class Molecular
+{
+	private:
+	public: 
+		Microenvironment* pMicroenvironment; 
+	
+		// model much of this from Secretion 
+		Molecular(); 
+ 	
+		// we'll set this to replace BioFVM's version		
+		std::vector<double> internalized_total_substrates; 
+
+		// for each substrate, a fraction 0 <= f <= 1 of the 
+		// total internalized substrate is released back inot
+		// the environment at death 
+		std::vector<double> fraction_released_at_death; 
+
+		// for each substrate, a fraction 0 <= f <= 1 of the 
+		// total internalized substrate is transferred to the  
+		// predatory cell when ingested 
+		std::vector<double> fraction_transferred_when_ingested; 
+		
+		/* prototyping / beta in 1.5.0 */ 
+		// Boolean, Integer, and Double parameters
+/*		
+		std::vector<bool> bools; 
+		std::unordered_map<std::string,int> bool_name_map; 
+		std::string& bool_name( int i ); 
+		std::vector<std::string> bool_units; 
+		void resize_bools( int n ); 
+		int add_bool( std::string name , std::string units , bool value ); 
+		bool& access_bool( std::string name ); 
+		
+		std::vector<int> ints; 
+		std::unordered_map<std::string,int> int_name_map; 
+		std::string& int_name( int i ); 
+		std::vector<std::string> int_units; 
+		int& access_int( std::string name ); 
+		
+		std::vector<int> doubles; 
+		std::unordered_map<std::string,int> double_name_map; 
+		std::string& double_name( int i ); 
+		std::vector<std::string> double_units; 
+		double& access_double( std::string name ); 
+*/
+	
+		// use this to properly size the secretion parameters to the 
+		// microenvironment in molecular.pMicroenvironment. 
+		void sync_to_current_microenvironment( void ); // done 
+		
+//		void advance( Basic_Agent* pCell, Phenotype& phenotype , double dt ); 
+		
+		// use this to properly size the secretion parameters to the microenvironment in 
+		// pMicroenvironment
+		void sync_to_microenvironment( Microenvironment* pNew_Microenvironment ); // done 
+		
+		// use this 
+		void sync_to_cell( Basic_Agent* pCell ); 
+		
+};
+
+class Intracellular
+{
+ private:
+ public:
+    std::string intracellular_type;  // specified in XML <intracellular type="...">:  "maboss", "sbml", ...
+	// bool enabled; 
+
+    // ==========  specific to SBML ==============
+    // std::string sbml_filename;
+
+	
+    // ================  generic  ================
+	// This function parse the xml cell definition
+	virtual void initialize_intracellular_from_pugixml(pugi::xml_node& node) = 0;
+	
+	// This function initialize the model, needs to be called on each cell once created
+	virtual void start() = 0;
+	
+	// This function checks if it's time to update the model
+	virtual bool need_update() = 0;
+
+	// This function update the model for the time_step defined in the xml definition
+	virtual void update() = 0;
+
+	// Get value for model parameter
+	virtual double get_parameter_value(std::string name) = 0;
+	
+	// Set value for model parameter
+	virtual void set_parameter_value(std::string name, double value) = 0;
+
+	virtual std::string get_state() = 0;  
+	
+	virtual Intracellular* clone() = 0;
+    
+	
+
+    // ================  specific to "maboss" ================
+	virtual bool has_variable(std::string name) = 0; 
+	virtual bool get_boolean_variable_value(std::string name) = 0;
+	virtual void set_boolean_variable_value(std::string name, bool value) = 0;
+	// virtual bool get_double_variable_value(std::string name) = 0;
+	// virtual void set_double_variable_value(std::string name, bool value) = 0;
+	virtual void print_current_nodes() = 0;
+	
+
+    // ================  specific to "roadrunner" ================
+    virtual int update_phenotype_parameters(PhysiCell::Phenotype& phenotype) = 0;
+    virtual int validate_PhysiCell_tokens(PhysiCell::Phenotype& phenotype) = 0;
+    virtual int validate_SBML_species() = 0;
+    virtual int create_custom_data_for_SBML(PhysiCell::Phenotype& phenotype) = 0;
 };
 
 class Phenotype
@@ -466,47 +613,24 @@ class Phenotype
 	Motility motility; 
 	Secretion secretion; 
 	
-	Phenotype(); // done 
+	Molecular molecular; 
+
+    // We need it to be a pointer to allow polymorphism
+	// then this object could be a MaBoSSIntracellular, or a RoadRunnerIntracellular
+	Intracellular* intracellular;
 	
+	Phenotype(); // done 
+	Phenotype(const Phenotype &p);
+	~Phenotype();
+	Phenotype& operator=(const Phenotype &p );
+
 	void sync_to_functions( Cell_Functions& functions ); // done 
+	
+	void sync_to_microenvironment( Microenvironment* pMicroenvironment ); 
 	
 	// make sure cycle, death, etc. are synced to the defaults. 
 	void sync_to_default_functions( void ); // done 
 };
-
-/*
-class Microenvironment_Options
-{
- private:
- 
- public: 
-	Microenvironment* pMicroenvironment;
-	std::string name; 
- 
-	std::string time_units; 
-	std::string spatial_units; 
-	double dx;
-	double dy; 
-	double dz; 
-	
-	bool outer_Dirichlet_conditions; 
-	std::vector<double> Dirichlet_condition_vector; 
-	
-	bool simulate_2D; 
-	std::vector<double> X_range; 
-	std::vector<double> Y_range; 
-	std::vector<double> Z_range; 
-	
-	Microenvironment_Options(); 
-	
-	bool calculate_gradients; 
-};
-
-extern Microenvironment_Options default_microenvironment_options; 
-extern Microenvironment microenvironment;
-
-void initialize_microenvironment( void ); 
-*/
 
 };
 

@@ -33,7 +33,7 @@
 #                                                                             #
 # BSD 3-Clause License (see https://opensource.org/licenses/BSD-3-Clause)     #
 #                                                                             #
-# Copyright (c) 2015-2018, Paul Macklin and the PhysiCell Project             #
+# Copyright (c) 2015-2021, Paul Macklin and the PhysiCell Project             #
 # All rights reserved.                                                        #
 #                                                                             #
 # Redistribution and use in source and binary forms, with or without          #
@@ -74,7 +74,7 @@ bool PhysiCell_standard_models_initialized = false;
 bool PhysiCell_standard_death_models_initialized = false; 
 bool PhysiCell_standard_cycle_models_initialized = false; 
 	
-Cycle_Model Ki67_advanced, Ki67_basic, live, apoptosis, necrosis, inert; 
+Cycle_Model Ki67_advanced, Ki67_basic, live, apoptosis, necrosis; 
 Cycle_Model cycling_quiescent; 
 Death_Parameters apoptosis_parameters, necrosis_parameters; 
 
@@ -82,7 +82,6 @@ Death_Parameters apoptosis_parameters, necrosis_parameters;
 
 Cycle_Model flow_cytometry_cycle_model, flow_cytometry_separated_cycle_model; 
 
-	
 void standard_Ki67_positive_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt )
 {
 	// the cell wants to double its volume 
@@ -354,11 +353,6 @@ bool create_cytometry_cycle_models( void )
 	flow_cytometry_separated_cycle_model.phases[2].entry_function = NULL;		
 	flow_cytometry_separated_cycle_model.phases[3].entry_function = NULL;		
 	
-	
-	
-	
-	
-	
 	return true; 
 }
 
@@ -555,9 +549,21 @@ void standard_volume_update_function( Cell* pCell, Phenotype& phenotype, double 
 		* (1- phenotype.volume.calcified_fraction);
    
 	phenotype.volume.total = phenotype.volume.cytoplasmic + phenotype.volume.nuclear; 
+	
+	
+	phenotype.volume.fluid_fraction = phenotype.volume.fluid / 
+		( 1e-16 + phenotype.volume.total ); 
    
 	phenotype.geometry.update( pCell,phenotype,dt );
 
+	return; 
+}
+
+void basic_volume_model( Cell* pCell, Phenotype& phenotype, double dt )
+{
+	
+	
+	
 	return; 
 }
 
@@ -569,6 +575,7 @@ void standard_update_cell_velocity( Cell* pCell, Phenotype& phenotype, double dt
 	}
 	
 	pCell->state.simple_pressure = 0.0; 
+	pCell->state.neighbors.clear(); // new 1.8.0
 	
 	//First check the neighbors in my current voxel
 	std::vector<Cell*>::iterator neighbor;
@@ -601,12 +608,14 @@ void standard_update_cell_velocity( Cell* pCell, Phenotype& phenotype, double dt
 	return; 
 }
 
-void standard_add_basement_membrane_interactions( Cell* pCell, Phenotype phenotype, double dt )
+void standard_add_basement_membrane_interactions( Cell* pCell, Phenotype& phenotype, double dt )
 {
 	if( pCell->functions.calculate_distance_to_membrane == NULL )
 	{ return; }
+	
 	double max_interactive_distance = phenotype.mechanics.relative_maximum_adhesion_distance * phenotype.geometry.radius;
-	double distance = pCell->functions.calculate_distance_to_membrane(pCell,phenotype,dt); //Note that the distance_to_membrane function must set displacement values (as a normal vector)
+	double distance = pCell->functions.calculate_distance_to_membrane(pCell,phenotype,dt); 
+	//Note that the distance_to_membrane function must set displacement values (as a normal vector)
 		
 	double temp_a=0;
 	// Adhesion to basement membrane
@@ -632,6 +641,31 @@ void standard_add_basement_membrane_interactions( Cell* pCell, Phenotype phenoty
 	return;	
 }
 
+void standard_domain_edge_avoidance_interactions( Cell* pCell, Phenotype& phenotype, double dt )
+{
+	if( pCell->functions.calculate_distance_to_membrane == NULL )
+	{ pCell->functions.calculate_distance_to_membrane = distance_to_domain_edge; }
+	phenotype.mechanics.cell_BM_repulsion_strength = 100;  
+		
+	double max_interactive_distance = phenotype.mechanics.relative_maximum_adhesion_distance * phenotype.geometry.radius;
+	double distance = pCell->functions.calculate_distance_to_membrane(pCell,phenotype,dt); 
+	//Note that the distance_to_membrane function must set displacement values (as a normal vector)
+		
+	// Repulsion from basement membrane
+	double temp_r = 0;
+	if(distance < phenotype.geometry.radius)
+	{
+		temp_r = (1- distance/phenotype.geometry.radius);
+		temp_r *= temp_r;
+		temp_r *= phenotype.mechanics.cell_BM_repulsion_strength;
+	}
+	if( fabs( temp_r ) < 1e-16 )
+	{ return; }
+	
+	axpy( &( pCell->velocity ) , temp_r , pCell->displacement ); 
+	return;
+}
+
 void empty_function( Cell* pCell, Phenotype& phenotype, double dt )
 { return; } 
 
@@ -652,18 +686,18 @@ void initialize_default_cell_definition( void )
 	cell_defaults.pMicroenvironment = NULL;
 	if( BioFVM::get_default_microenvironment() != NULL )
 	{ cell_defaults.pMicroenvironment = BioFVM::get_default_microenvironment(); }
-
+	
 	// make sure phenotype.secretions are correctly sized 
 	
 	cell_defaults.phenotype.secretion.sync_to_current_microenvironment();
-
+	
 	// set up the default parameters 
 		
 	cell_defaults.type = 0; 
 	cell_defaults.name = "breast epithelium"; 
 
 	cell_defaults.parameters.pReference_live_phenotype = &(cell_defaults.phenotype); 
-		
+	
 	// set up the default custom data 
 		// the default Custom_Cell_Data constructor should take care of this
 		
@@ -689,7 +723,9 @@ void initialize_default_cell_definition( void )
 	
 	// set up the default phenotype (to be consistent with the default functions)
 	cell_defaults.phenotype.cycle.sync_to_cycle_model( cell_defaults.functions.cycle_model ); 
-
+	
+	// set molecular defaults 
+	
 	return; 	
 }
 
@@ -810,7 +846,200 @@ void update_cell_and_death_parameters_O2_based( Cell* pCell, Phenotype& phenotyp
 	
 	pCell->phenotype.death.rates[necrosis_index] = multiplier * pCell->parameters.max_necrosis_rate; 
 	
+	// check for deterministic necrosis 
+	
+	if( pCell->parameters.necrosis_type == PhysiCell_constants::deterministic_necrosis && multiplier > 1e-16 )
+	{ pCell->phenotype.death.rates[necrosis_index] = 9e99; } 
+	
 	return; 
 }
 
+void chemotaxis_function( Cell* pCell, Phenotype& phenotype , double dt )
+{
+	// bias direction is gradient for the indicated substrate 
+	phenotype.motility.migration_bias_direction = pCell->nearest_gradient(phenotype.motility.chemotaxis_index);
+	// move up or down gradient based on this direction 
+	phenotype.motility.migration_bias_direction *= phenotype.motility.chemotaxis_direction; 
+
+	// normalize 
+	normalize( &( phenotype.motility.migration_bias_direction ) );
+	
+	return;
+}
+
+void standard_elastic_contact_function( Cell* pC1, Phenotype& p1, Cell* pC2, Phenotype& p2 , double dt )
+{
+	if( pC1->position.size() != 3 || pC2->position.size() != 3 )
+	{
+		#pragma omp critical
+		{
+			std::cout << "what?! " << std::endl
+			<< pC1 << " : " << pC1->type << " " << pC1->type_name << " " << pC1->position << std::endl 
+			<< pC2 << " : " << pC2->type << " " << pC2->type_name << " " << pC2->position << std::endl ;
+		}
+		return; 
+	}
+	
+	std::vector<double> displacement = pC2->position;
+	displacement -= pC1->position; 
+	// std::cout << "vel: " << pC1->velocity << " disp: " << displacement << " e: " << p1.mechanics.attachment_elastic_constant << " vel new: "; 
+	axpy( &(pC1->velocity) , p1.mechanics.attachment_elastic_constant , displacement ); 
+	// std::cout << pC1->velocity << std::endl << std::endl; 
+	return; 
+}
+
+void evaluate_interactions( Cell* pCell, Phenotype& phenotype, double dt )
+{
+	if( pCell->functions.contact_function == NULL )
+	{ return; }
+	
+	for( int n = 0; n < pCell->state.attached_cells.size() ; n++ )
+	{
+		pCell->functions.contact_function( pCell, phenotype , 
+			pCell->state.attached_cells[n] , pCell->state.attached_cells[n]->phenotype , dt ); 
+	}
+	
+	return; 
+}
+
+double distance_to_domain_edge(Cell* pCell, Phenotype& phenotype, double dummy)
+{
+	static double tolerance = 1e-7;
+	static double one_over_sqrt_2 = 0.70710678118;
+	static double one_over_sqrt_3 = 0.57735026919; 
+	
+		
+	double min_distance = 9e99; 
+	int nearest_boundary = -1; 
+	
+	// check against xL and xU
+	double temp_distance = pCell->position[0] - microenvironment.mesh.bounding_box[0]; 
+	if( temp_distance < min_distance )
+	{
+		min_distance = temp_distance; 
+		nearest_boundary = 0; 
+	}
+	temp_distance = microenvironment.mesh.bounding_box[3] - pCell->position[0]; 
+	if( temp_distance < min_distance )
+	{
+		min_distance = temp_distance; 
+		nearest_boundary = 1; 
+	}
+	
+	// check against yL and yU
+	temp_distance = pCell->position[1] - microenvironment.mesh.bounding_box[1]; 
+	if( temp_distance < min_distance )
+	{
+		min_distance = temp_distance; 
+		nearest_boundary = 2; 
+	}
+	temp_distance = microenvironment.mesh.bounding_box[4] - pCell->position[1]; 
+	if( temp_distance < min_distance )
+	{
+		min_distance = temp_distance; 
+		nearest_boundary = 3; 
+	}	
+	
+	if( default_microenvironment_options.simulate_2D == false )
+	{
+		// if in 3D, check against zL and zU
+		temp_distance = pCell->position[2] - microenvironment.mesh.bounding_box[2]; 
+		if( temp_distance < min_distance )
+		{
+			min_distance = temp_distance; 
+			nearest_boundary = 4; 
+		}
+		temp_distance = microenvironment.mesh.bounding_box[5] - pCell->position[2]; 
+		if( temp_distance < min_distance )
+		{
+			min_distance = temp_distance; 
+			nearest_boundary = 5; 
+		}			
+		
+		// check for 3D exceptions 
+		
+		// lines 
+		if( fabs( (pCell->position[0]) - (pCell->position[1]) ) < tolerance && 
+			fabs( (pCell->position[1]) - (pCell->position[2]) ) < tolerance && 
+			fabs( (pCell->position[0]) - (pCell->position[2]) ) < tolerance )
+		{
+			if( pCell->position[0] > 0 )
+			{
+				if( pCell->position[0] > 0 && pCell->position[1] > 0 )
+				{ pCell->displacement = { -one_over_sqrt_3 , -one_over_sqrt_3 , -one_over_sqrt_3 }; }
+				if( pCell->position[0] < 0 && pCell->position[1] > 0 )
+				{ pCell->displacement = { one_over_sqrt_3 , -one_over_sqrt_3 , -one_over_sqrt_3 }; }
+				
+				if( pCell->position[0] > 0 && pCell->position[1] < 0 )
+				{ pCell->displacement = { -one_over_sqrt_3 , one_over_sqrt_3 , -one_over_sqrt_3 }; }
+				if( pCell->position[0] < 0 && pCell->position[1] < 0 )
+				{ pCell->displacement = { one_over_sqrt_3 , one_over_sqrt_3 , -one_over_sqrt_3 }; }
+			} 
+			else
+			{
+				if( pCell->position[0] > 0 && pCell->position[1] > 0 )
+				{ pCell->displacement = { -one_over_sqrt_3 , -one_over_sqrt_3 , one_over_sqrt_3 }; }
+				if( pCell->position[0] < 0 && pCell->position[1] > 0 )
+				{ pCell->displacement = { one_over_sqrt_3 , -one_over_sqrt_3 , one_over_sqrt_3 }; }
+				
+				if( pCell->position[0] > 0 && pCell->position[1] < 0 )
+				{ pCell->displacement = { -one_over_sqrt_3 , one_over_sqrt_3 , one_over_sqrt_3 }; }
+				if( pCell->position[0] < 0 && pCell->position[1] < 0 )
+				{ pCell->displacement = { one_over_sqrt_3 , one_over_sqrt_3 , one_over_sqrt_3 }; }				
+			}
+			return min_distance; 
+		}
+		
+		// planes - let's not worry for today 
+		
+	}
+	else
+	{
+		// check for 2D  exceptions 
+		
+		if( fabs( (pCell->position[0]) - (pCell->position[1]) ) < tolerance )
+		{
+			if( pCell->position[0] > 0 && pCell->position[1] > 0 )
+			{ pCell->displacement = { -one_over_sqrt_2 , -one_over_sqrt_2 , 0 }; }
+			if( pCell->position[0] < 0 && pCell->position[1] > 0 )
+			{ pCell->displacement = { one_over_sqrt_2 , -one_over_sqrt_2 , 0 }; }
+			
+			if( pCell->position[0] > 0 && pCell->position[1] < 0 )
+			{ pCell->displacement = { -one_over_sqrt_2 , one_over_sqrt_2 , 0 }; }
+			if( pCell->position[0] < 0 && pCell->position[1] < 0 )
+			{ pCell->displacement = { one_over_sqrt_2 , one_over_sqrt_2 , 0 }; }
+			return min_distance; 
+		}
+	}
+	
+	// no exceptions 
+	switch(nearest_boundary)
+	{
+		case 0:
+			pCell->displacement = {1,0,0}; 
+			return min_distance; 
+		case 1:
+			pCell->displacement = {-1,0,0}; 
+			return min_distance;
+		case 2:
+			pCell->displacement = {0,1,0}; 
+			return min_distance; 
+		case 3: 
+			pCell->displacement = {0,-1,0}; 
+			return min_distance; 
+		case 4: 
+			pCell->displacement = {0,0,1}; 
+			return min_distance; 
+		case 5: 
+			pCell->displacement = {0,0,-1}; 
+			return min_distance; 
+		default:
+			pCell->displacement = {0,0,0};
+			return 9e99; 
+	}
+	
+	pCell->displacement = {0,0,0};
+	return 9e99; 
+}	
+	
 };

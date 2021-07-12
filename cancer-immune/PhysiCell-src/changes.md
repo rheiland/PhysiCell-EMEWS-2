@@ -1,3 +1,1018 @@
+# PhysiCell: an Open Source Physics-Based Cell Simulator for 3-D Multicellular Systems.
+
+**Version:** 1.9.0
+
+**Release date:** 12 July 2021
+
+## Release summary: 
+
+This release introduces intracellular modeling, i.e., models inside individual cells, for PhysiCell. We support three types of intracellular models: boolean networks, ordinary differential equations (ODEs), and dynamic flux balance analysis (dFBA). An intracellular model is part of a cell type's phenotype specification. Currently, we only support a single intracellular model per cell type; however, different *types* of models can be used for different cell types, e.g., a boolean network for cell type A and ODEs for cell type B.
+
+This new functionality has been a collaborative effort with the Institut Curie, the Barcelona Supercomputing Center, and the University of Washington. 
+We provide a unified C++ interface between each intracellular model and PhysiCell.
+
+The Systems Biology Markup Language (SBML) is used to define both the ODEs and FBA models; boolean networks are defined using MaBoSS's custom 
+configuration (.cfg and .bnd) files. (NOTE: PhysiCell does *not* support the full SBML specification; details are provided elsewhere.)
+
+
+**NOTE 1:** MacOS users need to define a PHYSICELL_CPP environment variable to specify their OpenMP-enabled g++. See the [Quickstart](documentation/Quickstart.md) for details.
+
+**NOTE 2:** Windows users need to follow an updated (from v1.8) MinGW64 installation procedure. This will install an updated version of g++, plus libraries that are needed for some of the intracellular models. See the [Quickstart](documentation/Quickstart.md) for details.
+ 
+### Major new features and changes:
+
++ First full support for intracellular models: boolean networks, ordinary differential equations (ODEs), and dynamic flux balance analysis (dFBA).
+
++ Added an abstract `Intracellular` class in core/PhysiCell_phenotype.h. Concrete classes for the supported intracellular models provide the functionality in the abstract class.
+
++ Added an `/addons` directory in the root directory. This is where the intracellular concrete classes and code are located.
+
++ We adopt existing software for intracellular model solvers: MaBoSS for boolean networks, libRoadrunner for ODEs, and Clp for dFBA. However, to make it easier for modelers to use these solvers in PhysiCell, we provide automatic downloads of libraries (see next bullet).
+
++ If a PhysiCell model uses an intracellular model, the PhysiCell Makefile will run a Python script (in the /beta directory) that checks to see if you have already downloaded the software (library) for the intracellular solver and, if not, downloads it and puts it in a directory within your PhysiCell project where it can be found and linked. The Python script will download the appropriate library for your operating system.
+
+### Minor new features and changes: 
+
++ Added `intracellular` XML element (inside `phenotype`) that specifies the type of intracellular model, its model definition file, its PhysiCell dt value to be evaluated, and relevant mappings between it and PhysiCell data.
+
++ Added Python scripts in /beta to download intracellular solver libraries: setup_libroadrunner.py, setup_libmaboss.py, setup_fba.py
+
++ Added new sample intracellular projects: physiboss_cell_lines, ode_energy, and cancer_metabolism
+
++ Added parsing of `dt_intracellular` XML element in modules/PhysiCell_settings.cpp (associated with the `intracellular_dt` global parameter in PhysiCell_constants.{h,cpp}). 
+However, it is up to each intracellular model as to how, or if, it will be used.
+
++ Added parsing of `intracellular_data` XML element in modules/PhysiCell_settings.cpp to determine. However, it is not currently used by the intracellular sample models. It may be used for debugging in the future.
+
++ Updated the [Quickstart](documentation/Quickstart.md) guide, primarily to reflect necessary changes for intracellular solver libraries.
+
++ Added `UniformInt()` to core/PhysiCell_utilities.cpp (used by intracellular boolean models)
+
++ Added new functions to ./modules/PhysiCell_geometry to draw (unfilled) circles of cells
+
++ Added new sample project: celltypes3 
+
++ Removed sample projects: template2D, template3D 
+
++ Deleted deprecated code in core/PhysiCell_cell_container.cpp
+
++ Bug fix and improvements to /beta/params_run.py to perform parameter explorations of models.
+
+### Beta features (not fully supported):
+ 
++ Started writing a standardized set of functions for Hill functions and promoter/inhibitor signaling. 
+
++ [Model Builder Tool](https://github.com/PhysiCell-Tools/PhysiCell-model-builder/releases) 
+
++ Added a simple Qt GUI for plotting cells only (plot_cells.py and vis_tab_cells_only.py in /beta)
+
++ Added a simple Qt GUI for plotting substrates and cells (plot_data.py and vis_tab.py in /beta)
+
++ Added simple contour plotting of a substrate (anim_substrate2D.py in /beta; copy to /output) 
+  
+### Bugfixes: 
+
++ In core/PhysiCell_cell.cpp, replace `switch` statement with `if`/`else if` to prevent compiler errors related to `static const int` from PhysiCell_constants.
+
++ core/PhysiCell_cell.cpp: assign_position(double x, double y, double z): make sure the current mechanics voxel is initialized.
+
++ bug fix to update phenotype geometry when parsing and processing `volume` XML element
+
++ The Makefile `reset` target now includes a `touch ./core/PhysiCell_cell.cpp` since its `.o` file can have intracellular dependencies.
+
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+ 
++ We will change the timing of when entry_functions are executed within cycle models. Right now, they are evaluated immediately after the exit from the preceding phase (and prior to any cell division events), which means that only the parent cell executes it, rather htan both daughter cells. Instead, we'll add an internal Boolean for "just exited a phase", and use this to exucte the entry function at the next cycle call. This should make daughter cells independently execute the entry function. 
+
++ We might make "trigger_death" clear out all the cell's functions, or at least add an option to do this. 
+
+### Planned future improvements: 
+
++ Further XML-based simulation setup. 
+
++ Read saved simulation states (as MultiCellDS digital snapshots)
+  
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ Create an angiogenesis sample project 
+ 
++ Create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ Improved plotting options in SVG 
+
++ Further update sample projects to make use of more efficient interaction testing available
+
++ Major refresh of documentation.
+
+* * * 
+
+**Version:** 1.8.0
+
+**Release date:** 9 March 2021
+
+## Release summary: 
+
+This release formally introduces Cell Definitions: a way to fully create cell types in the XML configuration file, including each cell type's initial phenotype and custom variables. This extends our recent work to shift specification of the microenvironment and boundary conditions to XML, and continues our trend towards a future release when many models can be designed and run without compiling any C++ at all. Most of the sample projects have been updated to use this new paradigm, including the a unified 2D/3D `template` project. We recommend using that template as the starting point for any new PhysiCell model.
+
+This release also introduces contact functions: a way to specify cell-cell contact interactions for any cells that you attach (using new, standardized attach and detach functions). Look at the `cancer-biorobots` and `biorobots` sample projects for examples for examples of the newly-introduced, standardized "spring" contact functions. The new `worm` sample project shows a more sophisticated example where cells exchange a differentiation factor across their contacts to model juxtacrine signaling. To help support contact interaction modeling, we include new search functions to easily report a vector of Cells that are nearby for use in your contact interactions. The default mechanics function also records a list of all currently (mechanically) interacting cells in state.neighbors.  
+
+The release also add a number of features to improve the ease of code use: a copy of the XML configuration file is now saved in your output directory to help keep track of what parameters and settings generated the data. We auto-generate a `legend.svg` file (also in output) based on your coloring function and cell defintions. The sample projects' Makefiles now include new rules to create animated GIFs, convert SVG to JPG, create a MP4 movie, and even auto-download the latest version of PhysiCell to update an existing project. A key new feature is the ability to pre-specify cell locations in a CSV file. The template projects will auto-parse this list if enabled to place cells at the start of the simulation. We also provide new functionality to add a virtual wall to the simulation domain to help keep cells from leaving; this can be enabled or disabled from the XML configuration file. 
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ Full rollout of `Cell_Definition` in the XML configuration files. Many basic models can now be fully defined in XML with minimal or no C++. 
+
++ Unified the 2D and 3D template projects into a single "template" project. 
+
++ New `predator-prey-farmer` sample project. Prey look for and consume food that's released by farmers. Prey avoid predators, predators hunt and eat prey.  
+
++ Improved thread safety, particularly when cells ingest cells. 
+
++ Introduced new cell-cell contact functions with syntax: 
+
+`void contact( Cell* pME, Phenotype& my_phenotype , Cell* pOther, Phenotype& other_phenotype, double dt )`
+
+These are exexcuted once per mechanics time step. Best practice is to either only read `pOther` and `other_phenotype`, or use OMP critical locks if writing data to `pOther` and `other_phenotype`. 
+
+For any cell (`this`), the contact function will be executed for any other cell (other) in `this->state.attached_cells`. The modeler will still need to decide which cells to attach. 
+
+All attached cells are automatically removed when a cell dies or divides. 
+
++ Added new attachment and detachment functions to the `Cell` class: 
+++ `void attach_cell( Cell* pAddMe );` Add `pAddme` to the cell's `state.attached_cells` for use in contact functions. 
+++ `void detach_cell( Cell* pRemoveMe );` Remove `pRemoveMe` from the cell's `state.attached_cells` list.  
+++ `void remove_all_attached_cells( void );` Remove all attached cells.  
+
++ Added additional attachment and detachment functions outside the `Cell` class: 
+++ `void attach_cells( Cell* pCell_1, Cell* pCell_2 );` Add `pCell_2` to `pCell_1->state.attached_cells` and add `pCell_1` to `pCell_2->state.attached_cells`
+++ `void detach_cells( Cell* pCell_1 , Cell* pCell_2 );` Remove the attachments. 
+
++ Introduced a standardized cell-cell spring-like adhesion contact function: `standard_elastic_contact_function.`
+
+This will add an additional Hookean spring attraction to cells in `state.attached_cells`. The modeler will still need to decide when to attach or detach cells. (Recommended practice: use the `custom` function that is evaluated once per mechanics time step.) 
+
++ Introduced two new member search funtions for cells to facilitate contact functions: 
+++ `std::vector<Cell*> nearby_cells(void)` returns a vector of all cells in the nearby mechanics voxels, excluding the cell (`this`). 
+Users should still test the distance to these cells in their interaction functions. 
+++ `std::vector<Cell*> nearby_interacting_cells(void)` returns a vector of all cells in the nearby mechanics voxels that are within interaction distance, excluding the cell (`this`). This uses the same distance testing as in the default mechanics functions. 
+
++ Introduced two new search funtions outside the `Cell` class to facilitate contact functions: 
+++ `std::vector<Cell*> nearby_cells(Cell* pCell)` returns a vector of all cells in the nearby mechanics voxels, excluding the cell (`pCell`). 
+Users should still test the distance to these cells in their interaction functions. 
+++ `std::vector<Cell*> nearby_interacting_cells(Cell* pCell)` returns a vector of all cells in the nearby mechanics voxels that are within interaction distance, excluding the cell (`pCell`). This uses the same distance testing as in the default mechanics functions. 
+
++ The default mechanics function now automatically updates `state.neighbors` with a list of all cells which had non-zero mechanical interactions in the last mechanics time step. Use this as an inexpensive (``prepaid``) method to find nearby cells for your own contact functions. 
+
++ Introduced a new sample project `worm` which shows advanced interaction testing and contact testing. Individual cells aggregate based on chemotaxis towards a secreted quorum factor and test for contacts. Cells can form a maximum of `n` (default: 2) attachments with the built-in spring functions. Cells on the ends (1 attachment) hold a steady expression of a differentiation function (`head`). This factor is exchanged between interior cells (2 attachments) to model juxtacrine signaling, using a contact function. End cells determine if they are a head or a tail based by comparing their expresoin with their linked neibhbor. This introduces asymmmetry that allows the "worms" to crawl directionally. 
+
++ All sample projects now copy the configuration file to the output directory, to help keep track of settings and parameters used to create a simulation result. 
+
++ Updated the sample projects to use the new Cell_Definitions and contact functions. 
+
++ Users can now pre-specify cell positions by creating a CSV file: 
+++ Each row corresponds to a cell:     x,y,z,typeID
+++ TypeID is the integer index of a `Cell_Definition` (ideally defined in XML!)
+++ Call the function `load_cells_csv( std::string filename )` to load these possitions and place the cells in corresponding positions. Ideally, cally this function at the end of `setup_tissue()`. The template projects will call this function automatically if a cell CSV file is specified in the `initial_conditions` section of the XML configuration file. 
+++ The `template` project already uses this function in the right place. See `worm-sample` for project that uses it. 
+
+### Minor new features and changes: 
+
++ Cell definitions can now be defined by XML files. See the note above. This functionality may be additionally refined or modified in the next few releases while still in beta. 
+
++ All sample projects have a `make jpeg` rule that uses ImageMagick to convert SVG snapshots into JPG files. 
+
++ All sample projects have a `make movie` that uses ffmepg to convert JPG snapshots to an mp4 animation. 
+
++ The `make upgrade` rule will check for and download the most recent version of PhysiCell, overwriting these core functions (and sample projects) without overwriting your project code. 
+
++ A new `paint_by_number_cell_coloring` coloring function colors each cell type with a unique color. (Currently there is a maximum of 13 pre-defined colors for 13 cell types.) Apoptotic cells are black, and necrotic cells are brown. 
+
++ Cycle and Death in the XML `Cell_Definitions` no longer require a `code` as long as the `name` is correct. 
+
++ Revised template project to a barebones minimum. 
+
++ Removed beta-testing sample project. 
+
++ Added functionality to auto-generate an SVG legend based on the currently defined XML funtions and coloring function. 
+
+### Beta features (not fully supported):
+ 
++ Started writing a standardized set of functions for Hill functions and promoter/inhibitor signaling. 
+
++ Started creating new functions to fill geometric shapes with cells of a chosen type. 
+  
+### Bugfixes: 
+
++ In response to SourceForge ticket #43, fixed the bug where Dirichlet conditions weren't properly applied to individual boundaries. 
+
++ Cleaned up code as suggested in SourceForge Ticket #42.
+
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+ 
++ We will change the timing of when entry_functions are executed within cycle models. Right now, they are evaluated immediately after the exit from the preceding phase (and prior to any cell division events), which means that only the parent cell executes it, rather htan both daughter cells. Instead, we'll add an internal Boolean for "just exited a phase", and use this to exucte the entry function at the next cycle call. This should make daughter cells independently execute the entry function. 
+
++ We might make "trigger_death" clear out all the cell's functions, or at least add an option to do this. 
+
+### Planned future improvements: 
+
++ Further XML-based simulation setup. 
+
++ Read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ Integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ Integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ Create an angiogenesis sample project 
+ 
++ Create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ Improved plotting options in SVG 
+
++ Further update sample projects to make use of more efficient interaction testing available
+
++ Major refresh of documentation.
+
+* * * 
+
+**Version:** 1.7.1
+
+**Release date:** 2 June 2020
+
+## Release summary: 
+
+This release introduces bug fixes (particularly the placement of daughter cells after division), introduces new functions for uniformly random sampling of the unit circle and unit sphere, and refines the beta implementation of XML-based cell definitions. 
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ No major changes. See 1.7.0 for most recent major changes. 
+
+### Minor new features and changes: 
+
++ Created new function std::vector<double> UniformOnUnitSphere( void ) that returns a (uniformly) random vector (x,y,z) on the unit sphere. 
+
++ Created new function std::vector<double> UniformOnUnitCircle( void ) that returns a (uniformly) random vector (x,y,0) on the unit circle (in the z = 0 plane).  
+
++ Created std::vector<double> LegacyRandomOnUnitSphere() that reproduces old behaviors of creating a random vector on the unit sphere. Never use this except if trying to replicate old results. Always use UniformOnUnitSphere() instead. 
+
++ Changed default placement of daughter cells to use UniformOnUnitCircle(), in response to longstanding "future plan" to "introduce improvements to placement of daughter cells after division."
+
++ All sample projects now check for <options> in their XML config files. 
+
++ Template projects calculate gradients and perform internal substrate tracking by default. 
+
++ Moved the bool is_active from "protected" to "public" in the Basic_Agent class in BioFVM_basic_agent.h, so that cells be be moved back into the domain and reactivated as needed. 
+
++ Changed beta implementation of XML cell definitions: 
+  + In cycle, transition_rates renamed to phase_transition_rates. PhysiCell will give a deprecatoin warning for transition_rates until the official release of XML cell definitions. 
+  + In death, rates renamed to death_rates. PhysiCell will give a deprecatoin warning for transition_rates until the official release of XML cell definitions. 
+  + In cycle and death, "phase_durations" can now be used in place of phase_transition rates. This may be more intuitive for some modelers. 
+
++ See 1.7.0 for other recent minor changes.
+
+### Beta features (not fully supported):
+ 
++ Cell definitions can now be defined by XML files. See the note above. This functionality may be additionally refined or modified in the next few releases while still in beta. 
+  
+### Bugfixes: 
+
++ In response to SourceForge ticket 26, fixed placement of parent cell in Cell::divide()
+
++ Removed errant Cell_Definition in the new template sample project. 
+
++ Added an extra check for bad chemotaxis definitions in response ot SourceForge ticket 28. 
+
++ Fixed bugs in processing of the "death" section of XML cell definitions.  
+
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+ 
++ We will change the timing of when entry_functions are executed within cycle models. Right now, they are evaluated immediately after the exit from the preceding phase (and prior to any cell division events), which means that only the parent cell executes it, rather htan both daughter cells. Instead, we'll add an internal Boolean for "just exited a phase", and use this to exucte the entry function at the next cycle call. This should make daughter cells independently execute the entry function. 
+
++ We might make "trigger_death" clear out all the cell's functions, or at least add an option to do this. 
+
+### Planned future improvements: 
+
++ Methods or scripts to make "upgrading" PhysiCell easier for existing projects (to avoid overwriting the config file, Makefile, or custom files. 
+ 
++ Current "template" project will be rolled into a new "predator-prey" sample project, and "template" will be tidied up. 
+
++ Further XML-based simulation setup. 
+
++ current sample projects will be refactored to use XML cdell definitions. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ improved plotting options in SVG 
+
+* * * 
+
+# PhysiCell: an Open Source Physics-Based Cell Simulator for 3-D Multicellular Systems.
+
+**Version:** 1.7.0
+
+**Release date:** 12 May 2020
+
+## Release summary: 
+
+This release (1) adds "net export" as a new form of more generalized substrate secretion, (2) adds helper funtions for cell size and volume for esier configuration, (3) adds a new, standardized chemotaxis function, (4) adds 1D diffusion, and (5) introduces XML-based cell definitions as a beta feature. It also incorporates a variety of bugfixes.   
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ Added "net_export_rates" to "secretion" part of Phenotype, and to the Basic_Agent class in BioFVM. This is in response to SourceForge ticket 19. 
+
++ Added new helper functions to help users to more easily set the *target* cell size: 
+   + void Cell::set_target_volume( double new_volume ) sets the target total cell volume, while preserving the desired nuclear:cytoplasmic ratio and desired fluid fraction. In the default cell volume model, the cell will now approach this value by shrinking or growing. 
+   + void Cell::set_target_radius( double new_radius ) behaves similarly, but using a radius instead. 
+
++ Added Cell::set_radius( double new_radius ) to set the cell's current radius to the new value, preserving the nuclear:cytoplasmic ratio and fluid fraction. Note that this does not change the target values, so the cell will shrink or grow back towards its current target size. 
+
++ Added 1-D diffusion solvers to BioFVM (useful for some coarse-grained problems). It solves for diffusion in the x-direction only. Use it by setting: 
+
+  microenvironment.diffusion_decay_solver = diffusion_decay_solver__constant_coefficients_LOD_1D
+  
+  Use this right after setup_microenvironment() in your main.cpp file. Future versions will include an XML option to use 1D. Most users will never need this. 
+  
++ Added a standardized chemotaxis function to the standard models: 
+
+     void chemotaxis_direction( Cell* pCell , Phenotype& phenotype , double dt ); 
+
+  This sets:
+  
+     phenotype.motility.motility_bias_direction = direction * grad( index ), where 
+    
+     direction = phenotype.motility.chemotaxis_direction 
+        (1 to go up gradient, -1 to go down gradient)
+     index = phenotype.motility.chemotaxis_index 
+        (the index of one of hte diffusing substrates)
+
++ Added Cell_Definitions in XML (beta feature) in response to SourceForge ticket 5. Users will be able to set the cell defaults definition by XML, as well as additional cell definitions that "inherit" phenotype parameters from cell defaults. This vastly reduces teh amount of necessary C++ to define a model. The new "template" sample project unifies 2D and 3D model specification using the new XML-based cell definitions. The next few releases will refine documentation and roll teh new XML-based cell definitions out to all the other sample projects. 
+
+### Minor new features and changes: 
+
++ Created get_cell_definition(std::string) to return by reference the matching cell definition (search by name). Returns cell_defaults if nothing found. 
+
++ Created get_cell_definition(int) to return by reference the matching cell definition (search by type). Returns cell_defaults if nothing found. 
+
++ added int chemotaxis_index and chemotaxis_direction to the Motility class to assist with a new standard chemotaxis function. 
+ 
++ scale_all_secretion_by_factor also scales net_export_rates.
+
++ sync_to_current_microenvironment and sync_to_microenvironment set up net_export_rates 
+
++ Secretion::advance now updates net_export processes 
+
++ Secretion::set_all_secretion_to_zero and Secretion::scale_all_secretion_by_factor act on net_export_rates as well. 
+
++ Cell::turn_off_reactions acts on net_export_rates as well. 
+
++ BioFVM::Basic_Agent::simulate_secretion_and_uptake now updates net_export processes, including impact on internal tracked substrate totals. (And all appropriate initializatoin functions have been updated. 
+
++ Updated documentation to reflect the new net export rates. 
+ 
++ Updated the documentation to fully state the biotransport PDEs (for better clarity), including notes on the dimensions of the parameters. 
+
++ Deprecated the following (unimplemented) function from the Volume class definition, as promised: 
+```
+ void update( Cell* pCell, Phenotype& phenotype, double dt )
+```
+
++ Added a new registry (unsorted map) of all cell definitions called cell_definitions_by_name and a vector of cell definitions called cell_definitions_by_index.  
+
++ The Cell_Definition default constructor and copy constructor automatically register all new cell definitions in cell_definitions_by_index; 
+
++ Created a display_cell_definitions(std::ostream&) function to quickly list all cell definitions and key information.  
+
++ Created build_cell_definitions_maps() to create cell_definitions_by_name and cell_definitions_by_type. This should go at the end of create_cell_types(). 
+
++ Created find_cell_definition(std::string) to return a pointer to the matching cell definition (search by name). Returns NULL if nothing found. 
+
++ Created find_cell_definition(int) to return a pointer to the matching cell definition (search by type). Returns NULL if nothing found. 
+
++ Created unit tests for cell definitions
+
++ Deprecated oxygen_index, glucose_index, TUMOR_TYPE, and VESSEL_TYPE from PhysiCell_Constants as promised. 
+
++ Minor source code cleanup in PhysiCell_settings.cpp. 
+
++ All sample projects now automatically build (and display) the registries of cell definitions via build_cell_definitions_maps() and display_cell_definitions(). 
+
++ added the following std::vector<bool> to Microenvironment_Options to facilitate setting Dirichlet conditions on specific boundaries for specific substates: Dirichlet_all, Dirichlet_xmin, Dirichlet_xmax, Dirichlet_ymin, Dirichlet_ymax, Dirichlet_zmin, Dirichlet_zmax, Dirichlet_interior. 
+
++ Minor cleanup in BioFVM_microenvironment.cpp 
+
++ Microenvironment::update_dirichlet_node(voxel_index,substrate_index,value) now sets dirichlet_activation_vectors[voxel_index][substrate_index] = true; 
+
++ Microenvironment::set_substrate_dirichlet_activation( int substrate_index , bool new_value ) now sets dirichlet_activation_vectors[voxel_index][substrate_index] for ALL Dirichlet nodes. 
+
++ Microenvironment::apply_dirichlet_conditions() now checks the Dirichlet activation vector of the individual voxel. 
+
++ Microenvironment::resize_voxels() and the various Microenvironment::resize_space() functions now resize dirichlet_activation_vectors, using the default dirichlet_activation_vector as the initial uniform activation vector. 
+
++ Microenvironment::resize_densities() and the various Microenvironment::add_density() functions now resize dirichlet_activation_vector and use it to intialize dirichlet_activation_vectors at every voxel. 
+
++ The various Microenvironment::add_density() functions now 
+
++ Added function Microenvironment::set_substrate_dirichlet_activation( int index, std::vector<bool>& new_value ) to set the entire vector of activation at a specific voxel. 
+
+
+### Beta features (not fully supported):
+ 
++ Cell definitions can now be defined by XML files. See the note above. This functionality may be additionally refined in the next few releases while still in beta. 
+
+  
+### Bugfixes: 
+
++ In response to SourceForge ticket 25, added cell_defaults.phenotype.molecular.sync_to_microenvironment( &microenvironment ); to the create_cell_types() functions in the 2D and 3D template projects. 
+
++ In response to SourceForge ticket 18, update_cell_and_death_parameters_O2_based() now checks for deterministic necrosis. 
+
++ In response to GitHub issue 33, fixed issue where data-cleanup makefile rule gets a list of too many files. Rolled the new rule through to all the sample Makefiles as well. 
+
+```
+data-cleanup:
+	rm -f *.mat
+	rm -f *.xml
+	rm -f *.svg
+	rm -rf ./output
+	mkdir ./output
+	touch ./output/empty.txt
+```
++ Updated Cell::Cell(), create_cell(), create_cell(Cell_Defintion), and convert_to_cell_definition() to call set_total_volume( phenotype.volume.total ). This makes sure that BioFVM knows the correct volume at the time of creation (or major update) so that it can save the correct values to outputs. This is in response to GitHub issue 22. 
+
++ Removed the false statement from the user manual that stated that the cytoplasmic:nuclear ratio is between 0 and 1. 
+
++ Removed the false statement from the user manual that stated that relative cell rupture volume is between 0 and 1. 
+
++ Updated the list of PhysiCell_Constants in response to SourceForge ticket 11. 
+
++ The various Microenvironment::add_density() functions now only set dirichlet_activation_vector = true for the newly added substrate, rather than *all* of them. This new vector is then used to initialize the activation vectors at every voxel. 
+
++ Microenvironment::get_substrate_dirichlet_activation() mistakenly returned a double. Now it returns bool. 
+
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ We will introduce improvements to placement of daughter cells after division. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+ 
++ We will change the timing of when entry_functions are executed within cycle models. Right now, they are evaluated immediately after the exit from the preceding phase (and prior to any cell division events), which means that only the parent cell executes it, rather htan both daughter cells. Instead, we'll add an internal Boolean for "just exited a phase", and use this to exucte the entry function at the next cycle call. This should make daughter cells independently execute the entry function. 
+
++ We might make "trigger_death" clear out all the cell's functions, or at least add an option to do this. 
+
+### Planned future improvements: 
+ 
++ Further XML-based simulation setup. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ improved plotting options in SVG 
+
+* * * 
+
+# PhysiCell: an Open Source Physics-Based Cell Simulator for 3-D Multicellular Systems.
+
+**Version:** 1.6.1
+
+**Release date:** 26 January 2020
+
+## Release summary: 
+
+This release fixes minor bugs and improves the documentation. It also adds some minor new capabilities, such as setting time step sizes in the XML configuration file. 
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ List here. 
+ 
+### Minor new features and changes: 
+ 
++ "make list-projects" now displayed to standard output a list of all the sample projects. 
+
++ dt_diffusion, dt_mechanics, and dt_phenotype can now be set via the XML configuration file in the options section. 
+
++ Added documentation on the time step sizes to the User Guide. 
+
++ Preliminary work to support Travis CI testing. 
+
++ Updated documentation to note that Cell::start_death is the preferred method to trigger cell death, and NOT Death::trigger_death. 
+
++ Updated Microenvironment::compute_all_gradient_vectors to now compute one-sized gradients on edge voxels. (Previously, no gradient was computed here.) 
+
++ Updated Microenvironment::compute_all_gradient_vectors to check if there is no z-direction (i.e., 2D) and exit early if so. 
+
++ Updated Microenvironment::compute_all_gradient_vectors to check if there is no y-direction (i.e., 1D) and exit early if so. 
+
++ Made PhysiCell_constants.cpp (and added this to the core of all project makefiles) so that dt and other variables can be non-static (i.e., set by XML options). 
+
++ Added "make checkpoint" rule to makefiles. This zips up the user-custom stuff (./config, ./, ./custom_modules) into a timestamped zip file. Use this before upgrading PhysiCell to make sure you keep your own Makefile, etc. 
+ 
+### Beta features (not fully supported):
+ 
++ List here. 
+  
+### Bugfixes: 
+
++ BioFVM's diffusion_decay_solver__constant_coefficients_LOD_3D, diffusion_decay_solver__constant_coefficients_LOD_2D check for regular meshes instead of uniform meshes. 
+
++ Biorobots sample project fixed bugs on searching for substrates vs. searching for cell types. 
+
++ In BioFVM_vectors, the normalize functions now return a zero vector if the vector's norm is less than 1e-16. This is for John Metzcar. 
+
++ In PhysiCell_Cell.cpp, made fixes to Cell::divide() and Cell::assign_position() to fix a bug where cells dividing on the edge of the domain woudl place a daughter cell at (0,0,0). Thanks, Andrew Eckel!
+
++ Code cleanup in PhysiCell_cell_container in Cell_Container::update_all_cells() as suggested by Andrew Eckel. Thanks! 
+ 
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ We will introduce improvements to placement of daughter cells after division. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+ 
++ We will change the timing of when entry_functions are executed within cycle models. Right now, they are evaluated immediately after the exit from the preceding phase (and prior to any cell division events), which means that only the parent cell executes it, rather htan both daughter cells. Instead, we'll add an internal Boolean for "just exited a phase", and use this to exucte the entry function at the next cycle call. This should make daughter cells independently execute the entry function. 
+
++ We might make "trigger_death" clear out all the cell's functions, or at least add an option to do this. 
+
+### Planned future improvements: 
+ 
++ Further XML-based simulation setup. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ improved plotting options in SVG 
+
+* * * 
+
+**Version:** 1.6.0
+
+**Release date:** 20 August 2019
+
+## Release summary: 
+
+This release introduces a new XML-based configuration for the chemical microenvironment. All 
+the sample projects have been updated to use this new functionality. There is no change 
+in APIs or high-level usage / syntax for end users; old projects should continue to work without 
+modification, although we highly recommend migrating to the simplified microenvironment setup. 
+A short blog tutorial on this new functionality can be found at 
+
+http://mathcancer.org/blog/setting-up-the-physicell-microenvironment-with-xml
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ XML-based setup of the chemical microenvironment.  
+ 
+### Minor new features and changes: 
+ 
++ Updated template2D sample project: 
+  + Refined "reset" and "data-cleanup" rules in Makefile
+  + Converted project to use the new XML-based microenvironment setup. 
+
++ Updated template3D sample project: 
+  + Refined "reset" and "data-cleanup" rules in Makefile
+  + Converted project to use the new XML-based microenvironment setup. 
+
++ Updated heterogeneity sample project: 
+  + Refined "reset" and "data-cleanup" rules in Makefile
+  + Converted project to use the new XML-based microenvironment setup. 
+
++ Updated cancer immune sample rpoject: 
+  + Refined "reset" and "data-cleanup" rules in Makefile
+  + Converted project to use the new XML-based microenvironment setup. 
+
++ Updated virus macrophage sample project: 
+  + Refined "reset" and "data-cleanup" rules in Makefile
+  + Converted project to use the new XML-based microenvironment setup. 
+  + Enabled gradient calculations (were previously off, although we wanted macrophage chemotaxis) 
+
++ Updated biorobots sample project: 
+  + Refined "reset" and "data-cleanup" rules in Makefile. 
+  + Converted project to use the new XML-based microenvironment setup.
+  + Note that values in user_parameters will override values in microenvironment_setup. 
+  + Improved project to properly search for substrate indices instead of hard coding them. 
+
++ Updated cancer biorobots sample project: 
+  + Refined "reset" rule in Makefile. 
+  + Converted project to use the new XML-based microenvironment setup.
+  + Improved project to properly search for substrate indices instead of hard coding them. 
+
++ Refined "reset" and "data-cleanup" rules in default Makefile 
+
++ Created new function to access the (private) microenvironment dirichlet_activation_vector: 
+ 
+  double Microenvironment::get_substrate_dirichlet_activation( int substrate_index ); 
+
++ Updated the main microenvironment display function Microenvironment::display_information to summarize the initial and boundary conditions for each substrate 
+
++ Wrote two new functions to parse the XML in microenvironment_setup to add substrates and 
+options:  
+  + bool setup_microenvironment_from_XML( pugi::xml_node root_node )
+  + bool setup_microenvironment_from_XML( void )
+The second one assumes you already defined the root node and access the 
+global (pugi)xml node for it. 
+
++ The main XML parsing function now calls setup_microenvironment_from_XML(), just before processing user-defined parameters. 
+ 
+### Beta features (not fully supported):
+ 
++ anim_svg.py - now plots correctly sized cells; manually step via arrow keys
+
++ anim_svg_cycle.py - same as above, but automatically cycles through .svg files
+  
+### Bugfixes: 
+
++ None.
+ 
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ We will introduce improvements to placement of daughter cells after division. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+
+### Planned future improvements: 
+ 
++ Further XML-based simulation setup. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ improved plotting options in SVG 
+
+* * * 
+ 
+**Version:** 1.5.2
+
+**Release date:** 11 June 2019
+
+## Release summary: 
+
+This minor release fixes bugs that affected the release of internalized substrates at cell death on Linux and OSX operating systems, relating to system differences in order of evaluating destructor functions. The release of internalized substrates has been moved to a new function, and placed in cell death functions. There is no change in APIs or high-level usage / syntax for end users. 
+
+Users should also consult the release notes for 1.5.0. 
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ None 
+ 
+### Minor new features and changes: 
+ 
++ Introduced new function Basic_Agent::release_internalized_substrates() to explicitly release a cell's internalized substrates, rather assuming it can be properly done in the Basic_Agent destructor function. 
+
++ Removed the Basic_Agent destructor function to allow the compiler to automatically generate this. 
+
++ Very minor revisions to the release protocol. 
+
++ Minor updates to the user guide to reflect the release_internalized_substrates() function. 
+ 
+### Beta features (not fully supported):
+ 
++ anim_svg.py - now plots correctly sized cells; manually step via arrow keys
+
++ anim_svg_cycle.py - same as above, but automatically cycles through .svg files
+  
+### Bugfixes: 
+
++ Move code for internalized substrate release from the Basic_Agent destructor to the new Basic_Agent::release_internalized_substrates() function. 
+
++ Basic_Agent::release_internalized_substrates() is now called from delete_cell(int) in PhysiCell_cell.cpp. 
+
++ Basic_Agent::release_internalized_substrates() explicitly sets internalized_substrates to a zero vector, just in case users want to call this function on non-dead cells. 
+
++ Cell::Cell() now initializes updated_current_mechanics_voxel_index = 0 (avoids a possible segfault in GDB)
+ 
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ We will introduce improvements to placement of daughter cells after division. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+
+### Planned future improvements: 
+ 
++ Further XML-based simulation setup. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ improved plotting options in SVG 
+
+* * * 
+
+# PhysiCell: an Open Source Physics-Based Cell Simulator for 3-D Multicellular Systems.
+ 
+**Version:** 1.5.1
+
+**Release date:** 7 June 2019
+
+## Release summary: 
+
+This minor release fixes bugs in the new virus-macrophage sample project. Users should also consult the reslease notes for 1.5.0. 
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ None 
+ 
+### Minor new features and changes: 
+ 
++ None 
+ 
+### Beta features (not fully supported):
+ 
++ None 
+  
+### Bugfixes: 
+
++ In the virus-macrophage sample project, switch cell death (in epithelial_function) from apoptosis to cell_lysis to demonstrate the new function. 
+
++ In the virus-macrophage sample project, enable internalized substrate tracking in the setup_microenvironment() function. 
+
++ In the virus-macrophage sample project, use a slower viral replication rate. (Should take 240 minutes to reach the lysis threshold.) 
+
++ In the virus-macrophage sample project, switched to a maximum simulation time of 24 hours (1440 minutes). 
+ 
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ We will introduce improvements to placement of daughter cells after division. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+
+### Planned future improvements: 
+ 
++ Further XML-based simulation setup. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
++ improved plotting options in SVG 
+
+* * * 
+
+# PhysiCell: an Open Source Physics-Based Cell Simulator for 3-D Multicellular Systems.
+ 
+**Version:** 1.5.0
+
+**Release date:** 7 June 2019
+
+## Release summary: 
+ 
+This release introduces the ability to track the net internalization of diffusible substrates from the microenvironment, conserving mass with the diffusion-reaction partial differentiatial equations in BioFVM. This is part of longer-term plans to support molecular-scale models (e.g., as encoded by SBML). It also introduces the ability for cells to ingest other cells (and acquire their internalized substrates and volume), the ability for cells to release their internalized substrates back to the microenvironment after death, and a new cell death model (lysis). 
+
+To illustrate these new capabilities, this release introduces a new sample project called virus-macrophage-sample. In this project, virus particles diffuse through the microenvironment, are uptaken by cells, replicate within cells, and trigger lytic death after reaching a threshold. Lysed cells release their virus particles to further diffuse through the environment. Macrophages move by random migration, test for contact with cells, and ingest / phagocytose cells based upon their viral load. Macrophages degrade their internalized viral particles. 
+
+This release also added clearer methods to specify the microenvironment initial conditions, and improved documentation. 
+
+**NOTE:** OSX users must now define PHYSICELL_CPP system variable. See the documentation.
+ 
+### Major new features and changes:
+
++ Added functionality in BioFVM to (optionally) track the total amount of substrates in each cell, based upon tracking uptake and secretion. Note that without additional, user-defined functions to internally create or consume substrate (e.g., synthesizing proteins, or using oxygen in metabolism), this can result in negative internal values (if cells only secrete but no internal creation functions have been set) or unbounded positive values (if cells uptake a substrate but do not consume it). In particular, Basic_Agents (and hence Cells) now have: 
+++ std::vector<double>* internalized_substrates (tracks internalized substrates)
+++ std::vector<double>* fraction_released_at_death (sets the fraction of each substrate that is released at cell death)
+++ std::vector<double>* fraction_transferred_when_ingested (sets the fraction of each substrate that is transferred to a predatory cell if the cell is eaten). 
+
+Users should access these via the cell's (new) molecular portion of the phenotype. See below. 
+
+In BioFVM::Microenvironment_Options class, we added: 
+++ bool track_internalized_substrates_in_each_agent. Set this to true to enable the tracking. 
+
++ In BioFVM::Microenvironment_Options, we added the ability to set the (uniform) microenvironment initial conditions, via: 
+++ std::vector<double> initial_condition_vector. 
+
+If this has size zero, then BioFVM will use the std::vector<double> Dirichlet_condition_vector as a reasonable guess at initial conditions as in prior versions. 
+
++ We added a new function to Basic_Agent (and hence Cell) to facilitate registering with the microenvironment: 
+++ void Basic_Agent::register_microenvironment( Microenvironment* microenvironment_in )
+
+This function will ensure that the secretion, uptake, and internalization tracking data structures of the individual cell agent are properly matched to the microenvironment. 
+
++ Added new "Molecular" block to Phenotype, for storing internalized substrates and for eventual inclusion of molecular-scale models (via SBML). The major elements are: 
+++ std::vector<double> internalized_substrates (tracks internalized substrates)
+++ std::vector<double> fraction_released_at_death (sets the fraction of each substrate that is released at cell death)
+++ std::vector<double> fraction_transferred_when_ingested (sets the fraction of each substrate that is transferred to a predatory cell if the cell is eaten). 
+
++ Added lyse_cell() to Cell, to allow a cell to immediately be lysed and potentially release its internalized substrates. Lysed cells are removed from the simulation. 
+ 
++ Added ingest_cell(Cell*) to Cell, to allow a cell to ingest (e.g., phagocytose) another cell, acquire its volume, and also (optionally) acquire its internalized substrates. This should be useful for immunology.  
+ 
+### Minor new features and changes: 
+ 
++ Added void Microenvironment::update_dirichlet_node( int voxel_index , int substrate_index , double new_value ) based on pc4nanobio changes, which allows you to update a single substrate's dirichlet condition at specific voxel, rather than all of them. 
+
++ Added void sync_to_microenvironment( Microenvironment* pMicroenvironment ) to Phenotype to facilitate syncing the cell's phenotype to the microenvironment (and subsequently calls the functions in phenotype.secretion and phenotype.molecular). This isn't used yet, but perhaps it should be. 
+ 
+### Beta features (not fully supported):
+ 
++ None 
+  
+### Bugfixes: 
+
++ Updated BioFVM's operator<< on std::vector<double> so that it doesn't output x="value", y="value", z = "value" for 3-D vectors. 
+
++ Fixed the search for cycle phase indices in the 2D and 3D template projects, to make sure it searches teh flow_cytometry_separated_cycle_model model and not the Ki67_advanced model, as part of the create_cell_types() function in the custom.cpp files. 
+
++ In PhysiCell_standard_models, standard_volume_update_function is now fixed to update phenotype.volume.fluid. (This was not used in any mechanics or other calculations, so it does not affect prior modeling results.) 
+
++ Removed repeated parameters (attached_worker_migration_bias, unattached_worker_migration_bias) in the cancer biorobots sample project.
+
++ trigger_death() now works. 
+ 
+### Notices for intended changes that may affect backwards compatibility:
+ 
++ We intend to merge Custom_Variable and Custom_Vector_Variable in the very near future.  
+
++ We may change the role of operator() and operator[] in Custom_Variable to more closely mirror the functionality in Parameters<T>. 
+
++ We will introduce improvements to placement of daughter cells after division. 
+
++ Some search functions (e.g., to find a substrate or a custom variable) will start to return -1 if no matches are found, rather than 0. 
+
+### Planned future improvements: 
+ 
++ Further XML-based simulation setup. 
+ 
++ read saved simulation states (as MultiCellDS digital snapshots)
+ 
++ "mainline" prototype cell attach/detach mechanics as standard models (currently in the biorobots and immune examples)
+ 
++ integrate SBML-encoded systems of ODEs as custom data and functions for molecular-scale modeling 
+  
++ integrate Boolean network support from PhysiBoSS into the mainline code (See http://dx.doi.org/10.1093/bioinformatics/bty766. )
+  
++ Develop contact-based cell-cell interactions. 
+
++ Add cell differentiation functionality to Phenotype, to be executed during cell division events. 
+ 
++ Add a new standard phenotype function that uses mechanobiology, where high pressure can arrest cycle progression. (See https://twitter.com/MathCancer/status/1022555441518338048.) 
+ 
++ Add module for standardized pharmacodynamics, as prototyped in the nanobio project. (See https://nanohub.org/resources/pc4nanobio.) 
+ 
++ create an angiogenesis sample project 
+ 
++ create a small library of angiogenesis and vascularization codes as an optional standard module in ./modules (but not as a core component)
+
 * * * 
 
 # PhysiCell: an Open Source Physics-Based Cell Simulator for 3-D Multicellular Systems.

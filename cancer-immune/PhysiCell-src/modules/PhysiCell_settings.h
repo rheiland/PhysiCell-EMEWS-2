@@ -80,6 +80,9 @@
 #include "./PhysiCell_pugixml.h"
 #include "../BioFVM/BioFVM.h"
 
+#include "../core/PhysiCell_constants.h" 
+#include "../core/PhysiCell_utilities.h"
+
 using namespace BioFVM; 
 
 namespace PhysiCell{
@@ -111,6 +114,9 @@ class PhysiCell_Settings
 	
 	double SVG_save_interval = 60; 
 	bool enable_SVG_saves = true; 
+
+	double intracellular_save_interval = 60; 
+	bool enable_intracellular_saves = false; 
 	
 	PhysiCell_Settings();
 	
@@ -124,8 +130,10 @@ class PhysiCell_Globals
 	double current_time = 0.0; 
 	double next_full_save_time = 0.0; 
 	double next_SVG_save_time = 0.0; 
+	double next_intracellular_save_time = 0.0; 
 	int full_output_index = 0; 
 	int SVG_output_index = 0; 
+	int intracellular_output_index = 0; 
 };
 
 template <class T> 
@@ -202,6 +210,9 @@ extern PhysiCell_Globals PhysiCell_globals;
 extern PhysiCell_Settings PhysiCell_settings; 
 
 extern User_Parameters parameters; 
+
+bool setup_microenvironment_from_XML( pugi::xml_node root_node );
+bool setup_microenvironment_from_XML( void );
 
 }
 

@@ -96,8 +96,8 @@ std::vector<std::string> cancer_immune_coloring_function( Cell* );
 
 // cell rules for extra elastic adhesion
 
-void attach_cells( Cell* pCell_1, Cell* pCell_2 );
-void dettach_cells( Cell* pCell_1 , Cell* pCell_2 );
+// void attach_cells( Cell* pCell_1, Cell* pCell_2 );
+// void dettach_cells( Cell* pCell_1 , Cell* pCell_2 );
 
 void add_elastic_velocity( Cell* pActingOn, Cell* pAttachedTo , double elastic_constant ); 
 void extra_elastic_attachment_mechanics( Cell* pCell, Phenotype& phenotype, double dt );

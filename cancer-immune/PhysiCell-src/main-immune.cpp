@@ -116,11 +116,13 @@ int main( int argc, char* argv[] )
 	
 	if( default_microenvironment_options.simulate_2D == false )
 	{
+        std::cout << "\n -------- main-immune.cpp:  setup_tissue (3D)" << std::endl;
 		create_cell_types();
 		setup_tissue();
 	}
 	else
 	{
+        std::cout << "\n -------- main-immune.cpp:  setup_tissue_2D" << std::endl;
 		create_cell_types_2D();
 		setup_tissue_2D();
 	}

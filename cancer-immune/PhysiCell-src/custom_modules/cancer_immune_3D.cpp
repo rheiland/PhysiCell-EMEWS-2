@@ -760,76 +760,76 @@ void extra_elastic_attachment_mechanics( Cell* pCell, Phenotype& phenotype, doub
 	return; 
 }	
 
-void attach_cells( Cell* pCell_1, Cell* pCell_2 )
-{
-	#pragma omp critical
-	{
+// void attach_cells( Cell* pCell_1, Cell* pCell_2 )
+// {
+// 	#pragma omp critical
+// 	{
 		
-	bool already_attached = false; 
-	for( int i=0 ; i < pCell_1->state.neighbors.size() ; i++ )
-	{
-		if( pCell_1->state.neighbors[i] == pCell_2 )
-		{ already_attached = true; }
-	}
-	if( already_attached == false )
-	{ pCell_1->state.neighbors.push_back( pCell_2 ); }
+// 	bool already_attached = false; 
+// 	for( int i=0 ; i < pCell_1->state.neighbors.size() ; i++ )
+// 	{
+// 		if( pCell_1->state.neighbors[i] == pCell_2 )
+// 		{ already_attached = true; }
+// 	}
+// 	if( already_attached == false )
+// 	{ pCell_1->state.neighbors.push_back( pCell_2 ); }
 	
-	already_attached = false; 
-	for( int i=0 ; i < pCell_2->state.neighbors.size() ; i++ )
-	{
-		if( pCell_2->state.neighbors[i] == pCell_1 )
-		{ already_attached = true; }
-	}
-	if( already_attached == false )
-	{ pCell_2->state.neighbors.push_back( pCell_1 ); }
+// 	already_attached = false; 
+// 	for( int i=0 ; i < pCell_2->state.neighbors.size() ; i++ )
+// 	{
+// 		if( pCell_2->state.neighbors[i] == pCell_1 )
+// 		{ already_attached = true; }
+// 	}
+// 	if( already_attached == false )
+// 	{ pCell_2->state.neighbors.push_back( pCell_1 ); }
 
-	}
+// 	}
 
-	return; 
-}
+// 	return; 
+// }
 
-void dettach_cells( Cell* pCell_1 , Cell* pCell_2 )
-{
-	#pragma omp critical
-	{
-		bool found = false; 
-		int i = 0; 
-		while( !found && i < pCell_1->state.neighbors.size() )
-		{
-			// if cell 2 is in cell 1's list, remove it
-			if( pCell_1->state.neighbors[i] == pCell_2 )
-			{
-				int n = pCell_1->state.neighbors.size(); 
-				// copy last entry to current position 
-				pCell_1->state.neighbors[i] = pCell_1->state.neighbors[n-1]; 
-				// shrink by one 
-				pCell_1->state.neighbors.pop_back(); 
-				found = true; 
-			}
-			i++; 
-		}
+// void dettach_cells( Cell* pCell_1 , Cell* pCell_2 )
+// {
+// 	#pragma omp critical
+// 	{
+// 		bool found = false; 
+// 		int i = 0; 
+// 		while( !found && i < pCell_1->state.neighbors.size() )
+// 		{
+// 			// if cell 2 is in cell 1's list, remove it
+// 			if( pCell_1->state.neighbors[i] == pCell_2 )
+// 			{
+// 				int n = pCell_1->state.neighbors.size(); 
+// 				// copy last entry to current position 
+// 				pCell_1->state.neighbors[i] = pCell_1->state.neighbors[n-1]; 
+// 				// shrink by one 
+// 				pCell_1->state.neighbors.pop_back(); 
+// 				found = true; 
+// 			}
+// 			i++; 
+// 		}
 	
-		found = false; 
-		i = 0; 
-		while( !found && i < pCell_2->state.neighbors.size() )
-		{
-			// if cell 1 is in cell 2's list, remove it
-			if( pCell_2->state.neighbors[i] == pCell_1 )
-			{
-				int n = pCell_2->state.neighbors.size(); 
-				// copy last entry to current position 
-				pCell_2->state.neighbors[i] = pCell_2->state.neighbors[n-1]; 
-				// shrink by one 
-				pCell_2->state.neighbors.pop_back(); 
-				found = true; 
-			}
-			i++; 
-		}
+// 		found = false; 
+// 		i = 0; 
+// 		while( !found && i < pCell_2->state.neighbors.size() )
+// 		{
+// 			// if cell 1 is in cell 2's list, remove it
+// 			if( pCell_2->state.neighbors[i] == pCell_1 )
+// 			{
+// 				int n = pCell_2->state.neighbors.size(); 
+// 				// copy last entry to current position 
+// 				pCell_2->state.neighbors[i] = pCell_2->state.neighbors[n-1]; 
+// 				// shrink by one 
+// 				pCell_2->state.neighbors.pop_back(); 
+// 				found = true; 
+// 			}
+// 			i++; 
+// 		}
 
-	}
+// 	}
 	
-	return; 
-}
+// 	return; 
+// }
 
 void immune_cell_motility( Cell* pCell, Phenotype& phenotype, double dt )
 {
@@ -1007,7 +1007,8 @@ void immune_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 		
 		if( dettach_me )
 		{
-			dettach_cells( pCell, pCell->state.neighbors[0] ); 
+			// dettach_cells( pCell, pCell->state.neighbors[0] ); 
+			detach_cells( pCell, pCell->state.neighbors[0] ); 
 			phenotype.motility.is_motile = true; 
 		}
 		return; 
